@@ -28,8 +28,9 @@ Publish `facturx-api` before `facturx-mcp` (it depends on it). Only run the work
    or on npmjs.com → the package → Settings → Trusted publisher → GitHub Actions: Organization `facturxapi`, Repository
    `sdk`, Workflow `publish-npm.yml`, Environment `npm-publish`, allowed action **only** `npm stage publish`.
 4. **PyPI pending publishers** (no manual first upload): pypi.org → Your account → Publishing → *Add a new pending
-   publisher*, once for `facturx-api` and once for `facturx-mcp`: Owner `facturxapi`, Repository `sdk`, Workflow
-   `publish-pypi.yml`, Environment `pypi-publish`.
+   publisher*, `facturx-api`: Owner `facturxapi`, Repository `sdk`, Workflow `publish-pypi.yml`, Environment `pypi-publish`;
+   `facturx-mcp`: same, but Environment `pypi-publish-mcp` (PyPI refuses two pending publishers with the same
+   repository + workflow + environment).
 
 ## Each release
 

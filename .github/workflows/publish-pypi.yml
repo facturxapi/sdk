@@ -108,7 +108,8 @@ jobs:
     if: ${{ inputs.mode == 'publish' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    environment: pypi-publish
+    # PyPI forbids two pending publishers with the same repo + workflow + environment: facturx-mcp has its own environment.
+    environment: ${{ inputs.package == 'facturx-mcp' && 'pypi-publish-mcp' || 'pypi-publish' }}
     permissions:
       contents: read
       id-token: write
