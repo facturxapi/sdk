@@ -1,0 +1,141 @@
+{
+ "recorded_at": "2026-11-06T16:03:15Z",
+ "client": "mcp (official Python SDK) 2.3.0 ClientSession over stdio",
+ "server": "facturx-mcp 0.1.0",
+ "base_url": "https://api-staging.facturxapi.com",
+ "steps": [
+  {
+   "step": "initialize",
+   "server": {
+    "name": "facturx",
+    "title": "FacturX API",
+    "version": "0.1.0",
+    "website_url": "https://facturxapi.com"
+   }
+  },
+  {
+   "step": "tools/list",
+   "tools": [
+    "facturx_dry_run",
+    "facturx_convert",
+    "facturx_validate",
+    "facturx_explain_error"
+   ]
+  },
+  {
+   "step": "tools/call facturx_explain_error",
+   "arguments": {
+    "code_or_rule": "BR-CO-15"
+   },
+   "is_error": false,
+   "structured_content": {
+    "query": "BR-CO-15",
+    "source": "GET /api/v1/integration-contract",
+    "engine_version": "8fd685a7a3ebdba6eb54de6749a4738b5bb7e752",
+    "matches": [
+     {
+      "json_path": "totals.net",
+      "bt": "BT-109",
+      "requirement": "required",
+      "en16931_rule": "BR-CO-10, BR-CO-13, BR-CO-15",
+      "coverage_status": "emitted"
+     },
+     {
+      "json_path": "totals.tax",
+      "bt": "BT-110",
+      "requirement": "required",
+      "en16931_rule": "BR-CO-14, BR-CO-15",
+      "cii_xpath": "rsm:CrossIndustryInvoice/rsm:SupplyChainTradeTransaction/ram:ApplicableHeaderTradeSettlement/ram:SpecifiedTradeSettlementHeaderMonetarySummation/ram:TaxTotalAmount",
+      "coverage_status": "emitted"
+     },
+     {
+      "json_path": "totals.gross",
+      "bt": "BT-112",
+      "requirement": "required",
+      "en16931_rule": "BR-CO-15",
+      "coverage_status": "emitted"
+     }
+    ]
+   }
+  },
+  {
+   "step": "tools/call facturx_dry_run",
+   "arguments": {
+    "invoice": "<invoice X08-DEMO-001>"
+   },
+   "is_error": false,
+   "structured_content": {
+    "ready": true,
+    "generation_readiness": {
+     "status": "ready",
+     "blockingInputCount": 0,
+     "reason": "no_generation_blocking_inputs"
+    },
+    "target": {
+     "requested": "en16931",
+     "executed": null,
+     "status": "not_run",
+     "missing_inputs": [],
+     "not_run_reason": "source_pdf_requires_convert"
+    },
+    "request_id": "f51f89da-69df-4eea-bf8f-0da1a3e57163",
+    "idempotency_key": "6beb81ea-7860-4c52-b500-771f58c7c4be"
+   }
+  },
+  {
+   "step": "tools/call facturx_convert",
+   "arguments": {
+    "invoice": "<invoice X08-DEMO-001>",
+    "out_dir": "out"
+   },
+   "is_error": false,
+   "structured_content": {
+    "files": {
+     "xml": {
+      "path": "out/factur-x.xml",
+      "bytes": 4584,
+      "sha256": "f332975e12f8dac94c926d8832c6434daf3ae718e3b10fb8acb9758bc940e03c"
+     },
+     "pdf": {
+      "path": "out/factur-x.pdf",
+      "bytes": 20624,
+      "sha256": "85b2d2143b8b4aa0834dbf90e455b26c751b5cd25fc3fd59821ae80b2a5012e9"
+     }
+    },
+    "target": {
+     "requested": "en16931",
+     "executed": "en16931",
+     "status": "verified",
+     "missing_inputs": [],
+     "not_run_reason": null
+    },
+    "target_profile": "EN16931",
+    "request_id": "2779c661-54d4-436e-a3d1-cb4a2d42ed0c",
+    "idempotency_key": "57e3e5e9-99d4-444f-b033-9a8d1dad5b96"
+   }
+  },
+  {
+   "step": "tools/call facturx_validate",
+   "arguments": {
+    "file_path": "out/factur-x.pdf",
+    "validation_target": "en16931"
+   },
+   "is_error": false,
+   "structured_content": {
+    "valid": true,
+    "validation_status": "valid",
+    "profile": "EN16931",
+    "target": {
+     "requested": "en16931",
+     "executed": "en16931",
+     "status": "verified",
+     "missing_inputs": [],
+     "not_run_reason": null
+    },
+    "error_count": 0,
+    "errors": []
+   }
+  }
+ ],
+ "note": "Compacted: text content duplicates structured_content and is omitted; tool descriptions are in src/facturx_mcp/server.py."
+}

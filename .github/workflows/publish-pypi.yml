@@ -1,0 +1,124 @@
+name: Publish PyPI (trusted publishing, manual)
+
+# Publication of the Python packages WITHOUT any token: PyPI trusted publishing (OIDC). Nothing in this file reads a secret.
+# Manual only (workflow_dispatch). Two modes:
+#   build   (default) - builds the sdist and the wheel, `twine check`, verifies name/version/license: nothing leaves the runner.
+#   publish           - uploads to PyPI through the trusted publisher, AFTER the founder approves the pypi-publish environment (required reviewer).
+# Order: publish facturx-api (python) BEFORE facturx-mcp (mcp), which depends on facturx-api>=0.1.0.
+# PyPI accepts a PENDING publisher for a project that does not exist yet (no first manual upload, no token): see RELEASING.md.
+# Requires a GitHub-hosted runner. The environment pypi-publish (GitHub Settings -> Environments) must require the founder as reviewer.
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "PyPI project: facturx-api (python) or facturx-mcp (mcp)"
+        type: choice
+        options: [facturx-api, facturx-mcp]
+        required: true
+      version:
+        description: "Version to publish; must equal the pyproject.toml of the package (e.g. 0.1.0)"
+        type: string
+        required: true
+      mode:
+        description: "build = checks only, nothing leaves the runner; publish = upload to PyPI after the founder approves the environment"
+        type: choice
+        options: [build, publish]
+        default: build
+        required: true
+
+concurrency:
+  group: publish-pypi-${{ inputs.package }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and check (no OIDC, no upload)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      PACKAGE: ${{ inputs.package }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Refuse any ref other than main or staging
+        if: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' }}
+        run: |
+          echo "refused: publish only from main or staging (got ${GITHUB_REF})"
+          exit 1
+
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+
+      - name: Locate the package and verify pyproject (name, version, license)
+        run: |
+          case "$PACKAGE" in
+            facturx-api) DIR=python ;;
+            facturx-mcp) DIR=mcp ;;
+            *) echo "unknown package $PACKAGE"; exit 1 ;;
+          esac
+          echo "DIR=$DIR" >> "$GITHUB_ENV"
+          python3 - "$DIR" "$PACKAGE" "$VERSION" <<'PY'
+          import re, sys, tomllib
+          d, name, version = sys.argv[1:4]
+          p = tomllib.load(open(f"{d}/pyproject.toml", "rb"))["project"]
+          def refuse(msg):
+              print(f"PREFLIGHT_REFUSED: {msg}"); sys.exit(1)
+          if p.get("name") != name: refuse(f"project name {p.get('name')!r} is not {name!r}")
+          if not re.fullmatch(r"\d+\.\d+\.\d+([abrc.]+\d+)?", version): refuse(f"{version!r} is not a PEP 440 release")
+          if p.get("version") != version: refuse(f"pyproject version {p.get('version')!r} is not the requested {version!r}")
+          if not p.get("license"): refuse("pyproject has no license (a founder decision, see RELEASING.md)")
+          if re.search(r"TO-BE-DECIDED|PLACEHOLDER|TODO", str(p["license"]), re.I): refuse("pyproject license is a placeholder")
+          print(f"PREFLIGHT_OK {name}=={version} license {p['license']}")
+          PY
+
+      - name: Build sdist and wheel, then twine check
+        run: |
+          python -m pip install --upgrade pip build twine
+          cd "$DIR"
+          python -m build
+          python -m twine check dist/*
+          ls -l dist
+
+      - name: Version not already on PyPI
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/${PACKAGE}/${VERSION}/json")
+          if [ "$code" = 200 ]; then echo "PREFLIGHT_REFUSED: ${PACKAGE}==${VERSION} already exists on PyPI"; exit 1; fi
+          echo "PyPI answered $code for ${PACKAGE}==${VERSION}: free"
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: dist-${{ inputs.package }}
+          path: ${{ env.DIR }}/dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Upload to PyPI (founder approves the environment)
+    needs: build
+    if: ${{ inputs.mode == 'publish' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: pypi-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: dist-${{ inputs.package }}
+          path: dist/
+
+      - name: Publish through the trusted publisher (OIDC, no token)
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        with:
+          packages-dir: dist/

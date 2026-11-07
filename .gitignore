@@ -1,0 +1,8 @@
+dist/
+build/
+*.egg-info/
+__pycache__/
+.ruff_cache/
+*.tgz
+node_modules/
+out/

@@ -1,0 +1,1 @@
+{"detail":{"error":"authentication_required","message":"Authentication required. Provide a valid access token, API key, or session cookie.","supported_methods":["Bearer token","X-API-Key header","refresh_token cookie"]},"request_id":"ee805a4d-7b3b-4d75-91ae-e209f86fe002"}

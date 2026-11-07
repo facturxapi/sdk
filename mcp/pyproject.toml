@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "facturx-mcp"
+version = "0.1.0"
+description = "Official MCP server for the FacturX API: dry run, Factur-X conversion, validation, rule lookup."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["facturx-api>=0.1.0,<0.2", "mcp>=2.3,<3"]
+license = {text = "MIT"}
+keywords = ["mcp", "factur-x", "facturx", "en16931", "e-invoicing", "facture-electronique"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Office/Business :: Financial :: Accounting",
+]
+
+[project.scripts]
+facturx-mcp = "facturx_mcp.server:main"
+
+[project.urls]
+Homepage = "https://github.com/facturxapi/sdk"
+Source = "https://github.com/facturxapi/sdk/tree/main/mcp"
+Issues = "https://github.com/facturxapi/sdk/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501", "B904"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["facturx_mcp"]
+known-third-party = ["facturx_api", "mcp"]

@@ -1,0 +1,92 @@
+name: CI
+
+# Offline tests of the three packages and of the publication tooling. No secret, no network call to the FacturX API.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    name: "@facturxapi/sdk (Node ${{ matrix.node }})"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22", "24"]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Offline tests
+        working-directory: node
+        run: npm test
+
+  python:
+    name: "facturx-api (Python ${{ matrix.python }})"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Offline tests and lint
+        working-directory: python
+        run: |
+          python -m pip install --upgrade pip ruff
+          PYTHONPATH=src python -m unittest discover -s tests -v
+          ruff check .
+
+  mcp:
+    name: "facturx-mcp (Python 3.12)"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Offline tests and lint
+        run: |
+          python -m pip install --upgrade pip ruff pytest ./python ./mcp
+          cd mcp && pytest tests -q && ruff check .
+
+  publication-tooling:
+    name: Publication workflows and preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Tests
+        run: |
+          python -m pip install --upgrade pip pytest pyyaml
+          node --test scripts/ci/npm_publish_preflight.test.mjs
+          pytest scripts/ci -q

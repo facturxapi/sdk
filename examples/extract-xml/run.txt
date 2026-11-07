@@ -1,0 +1,11 @@
+# 2026-11-06T16:11:24Z | staging release 900685311ea7 | cwd sdk/examples/extract-xml
+$ python extract_xml.py
+profile: EN16931 | xmlSize: 4584 | bytes: 4584
+# exit=0
+# 2026-11-06T16:11:26Z | staging release 900685311ea7 | cwd sdk/examples/extract-xml
+$ sh extract.sh
+{
+  "profile": "EN16931",
+  "xmlSize": 4584
+}
+# exit=0

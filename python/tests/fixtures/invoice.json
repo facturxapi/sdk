@@ -1,0 +1,57 @@
+{
+  "invoice_number": "X08-DEMO-001",
+  "issue_date": "2026-11-05",
+  "invoice_type": "380",
+  "currency": "EUR",
+  "seller": {
+    "name": "Atelier Exemple Fictif",
+    "address": {
+      "street": "1 rue de la Demonstration",
+      "city": "Paris",
+      "postal_code": "75001",
+      "country": "FR"
+    },
+    "vat_id": "FR15345678901"
+  },
+  "buyer": {
+    "name": "Client Exemple Fictif",
+    "address": {
+      "street": "2 rue de la Demonstration",
+      "city": "Lyon",
+      "postal_code": "69001",
+      "country": "FR"
+    }
+  },
+  "totals": {
+    "net": "100.00",
+    "tax": "20.00",
+    "gross": "120.00",
+    "due": "120.00"
+  },
+  "tax_breakdown": [
+    {
+      "rate": "20",
+      "category": "S",
+      "base": "100.00",
+      "amount": "20.00"
+    }
+  ],
+  "line_items": [
+    {
+      "number": "1",
+      "description": "Prestation fictive - demonstration uniquement",
+      "quantity": "1",
+      "unit": "C62",
+      "unit_price": "100.00",
+      "net_amount": "100.00",
+      "vat_rate": "20",
+      "vat_category": "S"
+    }
+  ],
+  "payment": {
+    "due_date": "2026-12-05"
+  },
+  "delivery": {
+    "date": "2026-11-05"
+  }
+}

@@ -1,0 +1,18 @@
+# 2026-11-06T16:16:05Z | staging release 900685311ea7 | cwd sdk/examples/quickstart
+$ python first_file.py
+ready: True
+verified {'xml': PosixPath('out/factur-x.xml'), 'pdf': PosixPath('out/factur-x.pdf')}
+# exit=0
+# 2026-11-06T16:11:05Z | staging release 900685311ea7 | cwd sdk/examples/quickstart
+$ sh quickstart.sh
+{
+  "dry_run": true,
+  "ready": true
+}
+Idempotency-Key: c7bcc1b7-a619-414f-830e-5b0f00acf001
+{
+  "success": true,
+  "target": "verified",
+  "profile": "EN16931"
+}
+# exit=0

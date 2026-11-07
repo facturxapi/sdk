@@ -1,0 +1,45 @@
+{
+  "name": "@facturxapi/sdk",
+  "version": "0.1.0",
+  "description": "Node.js client for the FacturX API: dry run, Factur-X PDF/A-3 conversion, validation.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "test": "node --test test/client.test.mjs"
+  },
+  "keywords": [
+    "factur-x",
+    "facturx",
+    "en16931",
+    "e-invoicing",
+    "facture-electronique"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facturxapi/sdk.git",
+    "directory": "node"
+  },
+  "homepage": "https://github.com/facturxapi/sdk#readme",
+  "bugs": {
+    "url": "https://github.com/facturxapi/sdk/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,40 @@
+{
+ "recorded_at": "2026-11-06T16:03:39Z",
+ "client": "mcp 2.3.0 ClientSession over streamable-http",
+ "label": "invalid-key",
+ "steps": [
+  {
+   "step": "tools/list",
+   "result": [
+    "facturx_dry_run",
+    "facturx_convert",
+    "facturx_validate",
+    "facturx_explain_error"
+   ]
+  },
+  {
+   "step": "tools/call facturx_explain_error",
+   "is_error": false,
+   "result": {
+    "query": "BT-1",
+    "source": "GET /api/v1/integration-contract",
+    "engine_version": "8fd685a7a3ebdba6eb54de6749a4738b5bb7e752",
+    "matches": [
+     {
+      "json_path": "invoice_number",
+      "bt": "BT-1",
+      "requirement": "required",
+      "en16931_rule": "BR-02",
+      "cii_xpath": "rsm:CrossIndustryInvoice/rsm:ExchangedDocument/ram:ID",
+      "coverage_status": "emitted"
+     }
+    ]
+   }
+  },
+  {
+   "step": "tools/call facturx_dry_run",
+   "is_error": true,
+   "result": "Error executing tool facturx_dry_run: {\"error\": {\"type\": \"AuthenticationError\", \"message\": \"HTTP 401 invalid_api_key: The API key provided is invalid or revoked.\", \"status\": 401, \"code\": \"invalid_api_key\", \"request_id\": \"0debb341-dcc7-426e-b801-18f4d955241b\", \"api_message\": \"The API key provided is invalid or revoked.\", \"idempotency_key\": \"fc4271bd-24e4-4936-9c53-c1774609fe0e\"}}"
+  }
+ ]
+}

@@ -1,0 +1,124 @@
+name: Publish npm (trusted publishing, manual)
+
+# Publication of the public npm packages WITHOUT any token: npm trusted publishing (OIDC). Nothing in this file reads a secret.
+# Manual only (workflow_dispatch). Two modes:
+#   dry-run (default) - verifies the package (scripts/ci/npm_publish_preflight.mjs, tests, `npm pack --dry-run`): nothing leaves the runner.
+#   stage             - `npm stage publish`: uploads the version in a NON-PUBLIC state; the FOUNDER approves it with 2FA (`npm stage approve <stage-id>`)
+#                       or rejects it (`npm stage reject`). The OIDC token can stage but cannot approve: no automation can make a version public.
+# The trusted publisher on npmjs.com is configured with Allowed actions = `npm stage publish` ONLY (see RELEASING.md): a direct `npm publish`
+# from this workflow would be refused by npm itself.
+# Requirements checked at run time: GitHub-HOSTED runner (npm trusted publishing does not support self-hosted runners), npm >= 11.15, Node >= 22.14.
+# Only @facturxapi/sdk (node) exists as an npm package. The MCP server (mcp) is a PYTHON package: see publish-pypi.yml.
+# The environment npm-publish (GitHub Settings -> Environments) must require the founder as reviewer; it holds no secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "npm package (only the SDK exists today: @facturxapi/sdk, directory node)"
+        type: choice
+        options: [sdk]
+        default: sdk
+        required: true
+      version:
+        description: "Version to publish; must equal node/package.json (e.g. 0.1.1)"
+        type: string
+        required: true
+      mode:
+        description: "dry-run = checks only, nothing leaves the runner; stage = npm stage publish (non public, the founder approves)"
+        type: choice
+        options: [dry-run, stage]
+        default: dry-run
+        required: true
+
+concurrency:
+  group: publish-npm-${{ inputs.package }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PACKAGE_NAME: "@facturxapi/sdk"
+  PACKAGE_DIR: node
+
+jobs:
+  verify:
+    name: Verify the package (no OIDC, no publication)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Refuse any ref other than main or staging
+        if: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging' }}
+        run: |
+          echo "refused: publish only from main or staging (got ${GITHUB_REF})"
+          exit 1
+
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+
+      - name: npm 11.15 or later (trusted publishing and npm stage)
+        run: |
+          npm install -g "npm@^11.15.0"
+          npm --version
+          node --version
+          node -e 'const [a,b]=process.versions.node.split(".").map(Number); if (a<22||(a===22&&b<14)) { console.error("Node >= 22.14 required"); process.exit(1) }'
+
+      - name: SDK tests (offline)
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: npm test
+
+      - name: Preflight (name, version, license, repository, files, tarball content, version not already published)
+        run: node scripts/ci/npm_publish_preflight.mjs "$PACKAGE_DIR" "$PACKAGE_NAME" "${{ inputs.version }}" --registry
+
+      - name: Tarball listing
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: npm pack --dry-run --ignore-scripts
+
+  stage:
+    name: Stage on npm (non public; the founder approves)
+    needs: verify
+    if: ${{ inputs.mode == 'stage' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: npm 11.15 or later
+        run: npm install -g "npm@^11.15.0" && npm --version
+
+      - name: Preflight again on the exact checkout that is staged
+        run: node scripts/ci/npm_publish_preflight.mjs "$PACKAGE_DIR" "$PACKAGE_NAME" "${{ inputs.version }}" --registry
+
+      - name: npm stage publish (OIDC; no token; not public until the founder approves)
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: npm stage publish
+
+      - name: What the founder does next
+        run: |
+          {
+            echo "### Staged $PACKAGE_NAME@${{ inputs.version }} (not public)"
+            echo "Founder, from a terminal logged in to npm with 2FA:"
+            echo '    npm stage list @facturxapi/sdk'
+            echo '    npm stage view <stage-id>      # optionally: npm stage download <stage-id>'
+            echo '    npm stage approve <stage-id>   # asks for the OTP: the version becomes public'
+            echo '    npm stage reject <stage-id>    # discards it'
+          } >> "$GITHUB_STEP_SUMMARY"

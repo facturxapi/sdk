@@ -1,0 +1,8 @@
+# 2026-11-06T16:13:22Z | staging release 900685311ea7 | cwd sdk/examples/urn-par-profil
+$ python urn_by_profile.py
+MINIMUM   -> refusé : unsupported_output_profile_for_invoice_data
+BASIC_WL  -> refusé : unsupported_output_profile_for_invoice_data
+BASIC     -> refusé : unsupported_output_profile_for_invoice_data
+EN16931   -> targetProfile=EN16931   URN=urn:cen.eu:en16931:2017
+EXTENDED  -> targetProfile=EXTENDED  URN=urn:cen.eu:en16931:2017#conformant#urn:factur-x.eu:1p0:extended
+# exit=0

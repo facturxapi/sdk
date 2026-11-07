@@ -1,0 +1,9 @@
+# 2026-11-06T16:11:28Z | staging release 900685311ea7 | cwd sdk/examples/pdf-to-pdfa3
+$ python make_carrier_pdf.py
+carrier.pdf: 843 bytes, PDF simple (non PDF/A, sans XML)
+# exit=0
+# 2026-11-06T16:11:28Z | staging release 900685311ea7 | cwd sdk/examples/pdf-to-pdfa3
+$ python pdf_to_pdfa3.py
+ready: True {'status': 'ready', 'blockingInputCount': 0, 'reason': 'no_generation_blocking_inputs'}
+verified EN16931 pdf_a3_compliant {'xml': PosixPath('out/factur-x.xml'), 'pdf': PosixPath('out/factur-x.pdf')}
+# exit=0

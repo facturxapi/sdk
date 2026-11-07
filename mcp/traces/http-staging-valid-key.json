@@ -1,0 +1,56 @@
+{
+ "recorded_at": "2026-11-06T16:03:36Z",
+ "client": "mcp 2.3.0 ClientSession over streamable-http",
+ "label": "valid-key",
+ "steps": [
+  {
+   "step": "tools/list",
+   "result": [
+    "facturx_dry_run",
+    "facturx_convert",
+    "facturx_validate",
+    "facturx_explain_error"
+   ]
+  },
+  {
+   "step": "tools/call facturx_explain_error",
+   "is_error": false,
+   "result": {
+    "query": "BT-1",
+    "source": "GET /api/v1/integration-contract",
+    "engine_version": "8fd685a7a3ebdba6eb54de6749a4738b5bb7e752",
+    "matches": [
+     {
+      "json_path": "invoice_number",
+      "bt": "BT-1",
+      "requirement": "required",
+      "en16931_rule": "BR-02",
+      "cii_xpath": "rsm:CrossIndustryInvoice/rsm:ExchangedDocument/ram:ID",
+      "coverage_status": "emitted"
+     }
+    ]
+   }
+  },
+  {
+   "step": "tools/call facturx_dry_run",
+   "is_error": false,
+   "result": {
+    "ready": true,
+    "generation_readiness": {
+     "status": "ready",
+     "blockingInputCount": 0,
+     "reason": "no_generation_blocking_inputs"
+    },
+    "target": {
+     "requested": "en16931",
+     "executed": null,
+     "status": "not_run",
+     "missing_inputs": [],
+     "not_run_reason": "source_pdf_requires_convert"
+    },
+    "request_id": "d658a82f-1d4d-4e04-811f-c0ad20b7cd40",
+    "idempotency_key": "496c4520-ea34-4256-b045-8617fae7061b"
+   }
+  }
+ ]
+}
