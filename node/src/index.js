@@ -86,7 +86,7 @@ export class ConvertResult {
 
 export class FacturX {
   /**
-   * No default host on purpose: pass baseUrl (e.g. https://api-staging.facturxapi.com) or set FACTURX_BASE_URL.
+   * No default host on purpose: pass baseUrl (e.g. https://api.facturxapi.com) or set FACTURX_BASE_URL.
    */
   constructor({ apiKey, baseUrl, timeoutMs = 120_000, transport } = {}) {
     this.apiKey = apiKey ?? process.env.FACTURX_API_KEY ?? "";

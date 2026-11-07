@@ -20,7 +20,7 @@ pip install dist/facturx_api-0.1.0-py3-none-any.whl
 import json
 from facturx_api import FacturX
 
-fx = FacturX(api_key="…", base_url="https://api-staging.facturxapi.com")
+fx = FacturX(api_key="…", base_url="https://api.facturxapi.com")
 invoice = json.load(open("invoice.json"))  # JSON ERP complet
 
 check = fx.dry_run(invoice)  # gratuit, aucun livrable

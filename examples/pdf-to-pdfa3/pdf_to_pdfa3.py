@@ -8,7 +8,7 @@ import json
 
 from facturx_api import FacturX, NotDeliveredError
 
-fx = FacturX(base_url="https://api-staging.facturxapi.com")  # clé : $FACTURX_API_KEY
+fx = FacturX(base_url="https://api.facturxapi.com")  # clé : $FACTURX_API_KEY
 invoice = json.load(open("../quickstart/invoice.json"))
 
 check = fx.dry_run(invoice, file="carrier.pdf")

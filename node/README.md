@@ -21,7 +21,7 @@ npm install ./facturxapi-sdk-0.1.0.tgz
 import { readFile } from "node:fs/promises";
 import { FacturX } from "@facturxapi/sdk";
 
-const fx = new FacturX({ apiKey: "…", baseUrl: "https://api-staging.facturxapi.com" });
+const fx = new FacturX({ apiKey: "…", baseUrl: "https://api.facturxapi.com" });
 const invoice = JSON.parse(await readFile("invoice.json", "utf8"));   // JSON ERP complet
 
 const check = await fx.dryRun(invoice);          // gratuit, aucun livrable

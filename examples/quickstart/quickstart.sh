@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Même parcours en curl : simulation gratuite puis conversion finale (1 facture).
 set -eu
-API=https://api-staging.facturxapi.com/api/v1/convert
+API=https://api.facturxapi.com/api/v1/convert
 curl -sS "$API?dry_run=true" -H "X-API-Key: $FACTURX_API_KEY" \
   -F "invoice_data=<invoice.json" -F output=facturx_pdfa3 -F validation_target=en16931 \
   | jq '{dry_run, ready: (.generationReadiness.status == "ready")}'

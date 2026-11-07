@@ -1,8 +1,8 @@
 # Exemples exécutés (SDK Python `facturx-api` et curl)
 
 Chaque dossier contient le code à copier et `run.txt`, la sortie **réelle** de son exécution
-contre staging (`https://api-staging.facturxapi.com`, release `900685311ea7`, 06/11/2026), avec
-la commande et la date. La clé API vient de `$FACTURX_API_KEY` (clé sandbox de test, jamais
+contre l environnement de test de FacturX (release `900685311ea7`, 06/11/2026), avec
+la commande et la date. Les exemples appellent la production, `https://api.facturxapi.com` (variable `FACTURX_BASE_URL` pour en changer). La clé API vient de `$FACTURX_API_KEY` (clé sandbox de test, jamais
 écrite dans ces fichiers). Prérequis : `pip install facturx-api` (wheel locale tant que le
 paquet n'est pas publié), `curl` et `jq` pour les variantes shell.
 

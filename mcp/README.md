@@ -13,7 +13,7 @@ convertir en Factur-X PDF/A-3, valider un fichier et expliquer une règle EN1693
 ```bash
 cd sdk/python && python -m build && cd ../mcp && python -m build
 pip install ../python/dist/facturx_api-0.1.0-py3-none-any.whl dist/facturx_mcp-0.1.0-py3-none-any.whl
-export FACTURX_BASE_URL=https://api-staging.facturxapi.com FACTURX_API_KEY=…
+export FACTURX_BASE_URL=https://api.facturxapi.com FACTURX_API_KEY=…
 facturx-mcp                                   # stdio (défaut)
 facturx-mcp --transport streamable-http --port 8765   # HTTP : http://127.0.0.1:8765/mcp
 ```
@@ -23,7 +23,7 @@ avec un client du marché) :
 
 ```json
 {"mcpServers": {"facturx": {"command": "facturx-mcp",
-  "env": {"FACTURX_BASE_URL": "https://api-staging.facturxapi.com", "FACTURX_API_KEY": "…"}}}}
+  "env": {"FACTURX_BASE_URL": "https://api.facturxapi.com", "FACTURX_API_KEY": "…"}}}}
 ```
 
 ## Outils

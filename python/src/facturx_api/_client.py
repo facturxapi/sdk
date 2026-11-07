@@ -62,7 +62,7 @@ class FacturX:
     """Client for the FacturX API.
 
     There is deliberately no default host: pass ``base_url`` (for example
-    ``https://api-staging.facturxapi.com``) or set ``FACTURX_BASE_URL``.
+    ``https://api.facturxapi.com``) or set ``FACTURX_BASE_URL``.
     """
 
     def __init__(

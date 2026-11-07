@@ -16,7 +16,7 @@ NS = {
     "rsm": "urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100",
     "ram": "urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100",
 }
-fx = FacturX(base_url="https://api-staging.facturxapi.com")  # clé : $FACTURX_API_KEY
+fx = FacturX(base_url="https://api.facturxapi.com")  # clé : $FACTURX_API_KEY
 invoice = json.load(open("../quickstart/invoice.json"))
 
 for profile in ["MINIMUM", "BASIC_WL", "BASIC", "EN16931", "EXTENDED"]:
