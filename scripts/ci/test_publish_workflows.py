@@ -51,7 +51,11 @@ def test_top_level_permissions_are_read_only_and_oidc_only_on_the_publishing_job
         perms = job.get("permissions", {})
         if name == publishing:
             assert perms == {"contents": "read", "id-token": "write"}
-            assert job.get("environment") in {"npm-publish", "pypi-publish"}
+            # facturx-mcp publishes from its own environment (PyPI refuses two pending publishers with the same repo +
+            # workflow + environment), selected by an expression on the package input.
+            allowed = {"npm-publish", "pypi-publish",
+                       "${{ inputs.package == 'facturx-mcp' && 'pypi-publish-mcp' || 'pypi-publish' }}"}
+            assert job.get("environment") in allowed
         else:
             assert "id-token" not in perms and "environment" not in job, name
 
