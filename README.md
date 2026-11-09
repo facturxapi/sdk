@@ -10,8 +10,8 @@ Factur-X PDF/A-3 file, validate it — from Python, Node.js, a command line, or 
 | [`mcp/`](mcp) | `facturx-mcp` | PyPI | MCP server (registry name `com.facturxapi/mcp`); an npm launcher may follow |
 | [`examples/`](examples) | — | — | Runnable examples with their recorded output |
 
-**Status: 0.1.0, alpha, not yet published.** Nothing here is on npm or PyPI until the first release described in
-[`RELEASING.md`](RELEASING.md).
+**Status: 0.1.1, alpha.** `facturx-api` and `facturx-mcp` are on PyPI (`pip install facturx-api`, `pip install facturx-mcp`).
+The Node.js package ships later on npm; see [`RELEASING.md`](RELEASING.md).
 
 ## Design choices worth knowing
 

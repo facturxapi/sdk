@@ -50,4 +50,4 @@ A staged npm version that is not approved is dropped with `npm stage reject`. A 
 will: run `npm deprecate @facturxapi/sdk@<version> "<message>"` and publish the next one. A workflow that fails before
 the upload step leaves nothing on npm or PyPI.
 
-> 0.1.0 (07/11/2026) was uploaded to PyPI WITHOUT attestations (Sigstore transparency log down). Before 0.1.1, remove `attestations: false` from `publish-pypi.yml`.
+> 0.1.0 (07/11/2026) was uploaded to PyPI without attestations (Sigstore transparency log down). From 0.1.1 on, attestations are on (action default); never turn them off without a founder decision.

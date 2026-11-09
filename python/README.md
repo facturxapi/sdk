@@ -4,14 +4,13 @@ Client Python de FacturX API : simulation gratuite (`dry_run`), conversion final
 Factur-X PDF/A-3 (ou XML CII), validation d'un fichier existant. Bibliothèque standard
 uniquement, Python 3.10+.
 
-> Statut 0.1.0 : **non publié sur PyPI.** Installation depuis la wheel construite localement.
+> Version 0.1.1, sur PyPI : `pip install facturx-api`.
 > Parcours facture → fichiers exécuté contre staging le 06/11/2026 (voir « Ce qui est prouvé »).
 
-## Installation (locale)
+## Installation
 
 ```bash
-cd sdk/python && python -m build          # produit dist/facturx_api-0.1.0-py3-none-any.whl
-pip install dist/facturx_api-0.1.0-py3-none-any.whl
+pip install facturx-api
 ```
 
 ## Utilisation

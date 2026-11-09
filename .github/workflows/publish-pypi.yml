@@ -123,6 +123,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: dist/
-          # 07/11: attestations OFF for the first upload only (0.1.0) — rekor.sigstore.dev answered 500 twice and the founder chose to
-          # publish without them. RE-ENABLE for 0.1.1: delete this line (the action default is true).
-          attestations: false
