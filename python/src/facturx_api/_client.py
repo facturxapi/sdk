@@ -23,7 +23,7 @@ from ._errors import (
 )
 from ._results import ConvertResult, DryRunResult
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 Response = tuple[int, dict[str, str], bytes]
 Transport = Callable[[str, str, Mapping[str, str], bytes | None], Response]

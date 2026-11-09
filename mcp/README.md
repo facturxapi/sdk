@@ -4,15 +4,13 @@ Serveur MCP officiel de FacturX API : un agent (Claude, Codex, Cursor…) peut s
 convertir en Factur-X PDF/A-3, valider un fichier et expliquer une règle EN16931, sans
 écrire de code d'intégration. Construit sur le SDK `facturx-api` ; transports stdio et HTTP.
 
-> Statut 0.1.0 : **non publié sur PyPI** (ni annuaire MCP). Installation depuis les wheels
-> construites localement. Testé avec le client MCP officiel (SDK Python), pas encore avec
+> Version 0.1.1, sur PyPI : `pip install facturx-mcp`. Testé avec le client MCP officiel (SDK Python), pas encore avec
 > Claude Code, Codex ou Cursor (voir « Ce qui est prouvé »).
 
-## Installation (locale)
+## Installation
 
 ```bash
-cd sdk/python && python -m build && cd ../mcp && python -m build
-pip install ../python/dist/facturx_api-0.1.0-py3-none-any.whl dist/facturx_mcp-0.1.0-py3-none-any.whl
+pip install facturx-mcp                        # installe aussi facturx-api
 export FACTURX_BASE_URL=https://api.facturxapi.com FACTURX_API_KEY=…
 facturx-mcp                                   # stdio (défaut)
 facturx-mcp --transport streamable-http --port 8765   # HTTP : http://127.0.0.1:8765/mcp

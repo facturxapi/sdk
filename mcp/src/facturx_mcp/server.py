@@ -17,7 +17,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 INSTRUCTIONS = (
     "FacturX API turns a complete ERP invoice JSON into a Factur-X PDF/A-3 (EN16931). "
