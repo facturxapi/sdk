@@ -4,7 +4,7 @@ Client Node.js de FacturX API : simulation gratuite (`dryRun`), conversion final
 Factur-X PDF/A-3 (ou XML CII), validation d'un fichier existant. Aucune dépendance,
 Node 18.17+, ESM, types inclus.
 
-> Version 0.1.0, sur npm : `npm install @facturxapi/sdk`. Parcours
+> Version 0.1.1, sur npm : `npm install @facturxapi/sdk`. Parcours
 > facture → fichiers exécuté contre staging le 06/11/2026 (voir « Ce qui est prouvé »).
 
 ## Installation

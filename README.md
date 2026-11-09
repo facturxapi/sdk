@@ -11,7 +11,7 @@ Factur-X PDF/A-3 file, validate it — from Python, Node.js, a command line, or 
 | [`examples/`](examples) | — | — | Runnable examples with their recorded output |
 
 **Status: alpha.** `facturx-api` and `facturx-mcp` 0.1.1 are on PyPI (`pip install facturx-api`, `pip install facturx-mcp`);
-`@facturxapi/sdk` 0.1.0 is on npm (`npm install @facturxapi/sdk`). See [`RELEASING.md`](RELEASING.md).
+`@facturxapi/sdk` 0.1.1 is on npm (`npm install @facturxapi/sdk`). See [`RELEASING.md`](RELEASING.md).
 
 ## Design choices worth knowing
 
