@@ -17,7 +17,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 INSTRUCTIONS = (
     "FacturX API turns a complete ERP invoice JSON into a Factur-X PDF/A-3 (EN16931). "
@@ -171,13 +171,16 @@ def build_server(client_factory: Callable[[], FacturX] | None = None) -> MCPServ
 
     @server.tool(
         description=(
-            "Validate an existing Factur-X PDF or CII XML file from the local disk. Returns valid, "
-            "validationStatus, profile, target and the first errors as reported by the API. May "
-            "count against the account quota like other processed invoices."
+            "Validate an existing Factur-X PDF or CII XML file from the local disk against "
+            "validation_target (default en16931, the same target as facturx_dry_run and "
+            "facturx_convert; pass france_2026 to check the invoice is ready for a French PA, "
+            "plateforme agréée). Returns valid, "
+            "validationStatus, profile, target and the first errors as reported by the API. Counts "
+            "1 invoice of the account quota when the API returns a report."
         ),
         annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
     )
-    def facturx_validate(file_path: str, validation_target: str | None = None) -> dict[str, Any]:
+    def facturx_validate(file_path: str, validation_target: str = "en16931") -> dict[str, Any]:
         try:
             report = client().validate(Path(file_path), validation_target=validation_target)
         except (FacturXError, ValueError, OSError) as exc:

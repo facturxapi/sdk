@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "facturx-mcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "Official MCP server for the FacturX API: dry run, Factur-X conversion, validation, rule lookup."
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["facturx-api>=0.1.0,<0.2", "mcp>=2.3,<3"]
+dependencies = ["facturx-api>=0.1.2,<0.2", "mcp>=2.3,<3"]
 license = {text = "MIT"}
 keywords = ["mcp", "factur-x", "facturx", "en16931", "e-invoicing", "facture-electronique"]
 classifiers = [

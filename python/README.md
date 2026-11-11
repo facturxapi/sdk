@@ -28,8 +28,9 @@ if check.ready:  # generationReadiness.status == "ready"
     print(doc.save("out"))  # out/factur-x.pdf et out/factur-x.xml
 ```
 
-Il n'y a **pas d'hôte par défaut** : `base_url` (ou `FACTURX_BASE_URL`) est obligatoire.
-`api_key` peut venir de `FACTURX_API_KEY`.
+Hôte par défaut à partir de 0.1.2 : la production, `https://api.facturxapi.com` (changer avec `base_url` ou
+`FACTURX_BASE_URL` ; obligatoire en 0.1.1). `api_key` peut venir de `FACTURX_API_KEY` (clé Sandbox gratuite :
+https://facturxapi.com/api-key).
 
 - `ready` lit `generationReadiness.status`, pas `success` : une simulation peut répondre
   `success=false` et autoriser quand même la génération.

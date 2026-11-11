@@ -15,7 +15,7 @@ Factur-X PDF/A-3 file, validate it — from Python, Node.js, a command line, or 
 
 ## Design choices worth knowing
 
-- **No default host.** Pass `base_url` / `baseUrl` or set `FACTURX_BASE_URL`; it must be `https`.
+- **Production by default** (from 0.1.2): the host is `https://api.facturxapi.com` unless you pass `base_url` / `baseUrl` or set `FACTURX_BASE_URL`; it must be `https`. In 0.1.1 the host is required.
 - **A final file is checked, not assumed.** A dry run reads the API's `generationReadiness`; a conversion is only
   reported as done when the final file is present, not on the HTTP status alone.
 - **One idempotency key per operation**, and signed download URLs are fetched without your API key.

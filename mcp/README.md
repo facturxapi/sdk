@@ -11,7 +11,8 @@ convertir en Factur-X PDF/A-3, valider un fichier et expliquer une règle EN1693
 
 ```bash
 pip install facturx-mcp                        # installe aussi facturx-api
-export FACTURX_BASE_URL=https://api.facturxapi.com FACTURX_API_KEY=…
+export FACTURX_API_KEY=…   # clé Sandbox gratuite : https://facturxapi.com/api-key
+# FACTURX_BASE_URL est facultatif à partir de 0.1.2 (production par défaut) ; obligatoire en 0.1.1
 facturx-mcp                                   # stdio (défaut)
 facturx-mcp --transport streamable-http --port 8765   # HTTP : http://127.0.0.1:8765/mcp
 ```
@@ -21,7 +22,7 @@ avec un client du marché) :
 
 ```json
 {"mcpServers": {"facturx": {"command": "facturx-mcp",
-  "env": {"FACTURX_BASE_URL": "https://api.facturxapi.com", "FACTURX_API_KEY": "…"}}}}
+  "env": {"FACTURX_API_KEY": "…"}}}}
 ```
 
 ## Outils

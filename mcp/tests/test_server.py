@@ -76,6 +76,16 @@ class ServerTests(unittest.TestCase):
             return True, None, json.loads(str(exc).split(": ", 1)[1])
         return result.is_error, result.structured_content, None
 
+    def test_validate_defaults_to_the_target_convert_verified(self):
+        report = {"valid": True, "validationStatus": "valid", "profile": "EN16931", "errors": []}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "factur-x.xml"
+            path.write_bytes(b"<?xml version='1.0'?><rsm:CrossIndustryInvoice/>")
+            server = self.server(reply(report))
+            is_error, content, _ = self.call(server, "facturx_validate", {"file_path": str(path)})
+        self.assertFalse(is_error)
+        self.assertIn("validation_target=en16931", self.calls[0]["url"])
+
     def test_tools_are_listed_with_cost_in_descriptions(self):
         tools = {t.name: t for t in asyncio.run(self.server().list_tools())}
         self.assertEqual(
