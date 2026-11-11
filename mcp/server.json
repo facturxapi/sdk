@@ -1,21 +1,34 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.facturxapi/mcp",
+  "title": "FacturX API",
   "description": "Official MCP server for the FacturX API: dry run, Factur-X conversion, validation, rule lookup.",
   "repository": {
     "url": "https://github.com/facturxapi/sdk",
     "source": "github",
     "subfolder": "mcp"
   },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "facturx-mcp",
-      "version": "0.1.1",
-      "transport": {
-        "type": "stdio"
-      }
+      "version": "0.1.2",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "FACTURX_API_KEY",
+          "description": "FacturX API key (free Sandbox key at https://facturxapi.com/api-key)",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "FACTURX_BASE_URL",
+          "description": "API base URL",
+          "isRequired": false,
+          "default": "https://api.facturxapi.com"
+        }
+      ]
     }
   ]
 }

@@ -1,5 +1,6 @@
 /// <reference types="node" />
 export declare const VERSION: string;
+export declare const DEFAULT_BASE_URL: string;
 
 export type Output = "facturx_pdfa3" | "xml_cii";
 export type ValidationTarget = "en16931" | "france_2026";
@@ -15,7 +16,7 @@ export type Transport = (
 export interface ClientOptions {
   /** Defaults to process.env.FACTURX_API_KEY. */
   apiKey?: string;
-  /** Required (or FACTURX_BASE_URL). No default host on purpose. */
+  /** Defaults to process.env.FACTURX_BASE_URL, else https://api.facturxapi.com. Must use https. */
   baseUrl?: string;
   timeoutMs?: number;
   transport?: Transport;

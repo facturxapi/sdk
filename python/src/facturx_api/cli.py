@@ -25,7 +25,7 @@ EXIT_OK, EXIT_NOT_READY, EXIT_USAGE, EXIT_API, EXIT_TRANSPORT = 0, 1, 2, 3, 4
 
 def _parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
-    common.add_argument("--base-url", help="API host (default: $FACTURX_BASE_URL)")
+    common.add_argument("--base-url", help="API host (default: $FACTURX_BASE_URL, else https://api.facturxapi.com)")
     common.add_argument("--api-key", help="API key (default: $FACTURX_API_KEY)")
     common.add_argument("--timeout", type=float, default=120.0, help="seconds (default 120)")
 

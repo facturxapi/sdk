@@ -1,6 +1,6 @@
 {
   "name": "@facturxapi/sdk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Node.js client for the FacturX API: dry run, Factur-X PDF/A-3 conversion, validation.",
   "license": "MIT",
   "type": "module",

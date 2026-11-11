@@ -29,8 +29,9 @@ if (check.ready) {                               // generationReadiness.status =
 }
 ```
 
-Pas d'hôte par défaut : `baseUrl` (ou `FACTURX_BASE_URL`) est obligatoire ; `apiKey` peut
-venir de `FACTURX_API_KEY`. Mêmes garanties que le SDK Python :
+Hôte par défaut à partir de 0.1.2 : la production, `https://api.facturxapi.com` (changer avec `baseUrl` ou
+`FACTURX_BASE_URL` ; obligatoire en 0.1.1). `apiKey` peut venir de `FACTURX_API_KEY` (clé Sandbox gratuite :
+https://facturxapi.com/api-key). Mêmes garanties que le SDK Python :
 
 - `ready` lit `generationReadiness.status`, pas `success`.
 - `convert` exige tous les champs de succès documentés ; sinon `NotDeliveredError.failedChecks`.

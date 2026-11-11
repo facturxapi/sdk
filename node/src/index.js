@@ -13,7 +13,9 @@ import {
 
 export * from "./errors.js";
 
-export const VERSION = "0.1.1";
+export const VERSION = "0.1.2";
+export const DEFAULT_BASE_URL = "https://api.facturxapi.com";
+const API_KEY_HELP = "Get a free Sandbox key at https://facturxapi.com/api-key";
 const OUTPUTS = ["facturx_pdfa3", "xml_cii"];
 const TARGETS = ["en16931", "france_2026"];
 
@@ -86,12 +88,11 @@ export class ConvertResult {
 
 export class FacturX {
   /**
-   * No default host on purpose: pass baseUrl (e.g. https://api.facturxapi.com) or set FACTURX_BASE_URL.
+   * The host defaults to production (https://api.facturxapi.com); pass baseUrl or set FACTURX_BASE_URL to change it.
    */
   constructor({ apiKey, baseUrl, timeoutMs = 120_000, transport } = {}) {
     this.apiKey = apiKey ?? process.env.FACTURX_API_KEY ?? "";
-    const base = baseUrl ?? process.env.FACTURX_BASE_URL ?? "";
-    if (!base) throw new TypeError("baseUrl is required (or set FACTURX_BASE_URL).");
+    const base = baseUrl || process.env.FACTURX_BASE_URL || DEFAULT_BASE_URL;
     if (new URL(base).protocol !== "https:") throw new TypeError("baseUrl must use https.");
     this.baseUrl = base.replace(/\/+$/, "");
     this.send = transport ?? fetchTransport({ timeoutMs });
@@ -183,7 +184,7 @@ export class FacturX {
       ...headers,
     };
     if (auth) {
-      if (!this.apiKey) throw new TypeError("apiKey is required (or set FACTURX_API_KEY).");
+      if (!this.apiKey) throw new TypeError(`apiKey is required (or set FACTURX_API_KEY). ${API_KEY_HELP}.`);
       allHeaders["X-API-Key"] = this.apiKey;
     }
     let status, responseHeaders, raw;

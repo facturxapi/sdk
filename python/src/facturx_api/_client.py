@@ -23,7 +23,9 @@ from ._errors import (
 )
 from ._results import ConvertResult, DryRunResult
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
+DEFAULT_BASE_URL = "https://api.facturxapi.com"
+API_KEY_HELP = "Get a free Sandbox key at https://facturxapi.com/api-key"
 
 Response = tuple[int, dict[str, str], bytes]
 Transport = Callable[[str, str, Mapping[str, str], bytes | None], Response]
@@ -61,8 +63,8 @@ def urllib_transport(timeout: float = 120.0) -> Transport:
 class FacturX:
     """Client for the FacturX API.
 
-    There is deliberately no default host: pass ``base_url`` (for example
-    ``https://api.facturxapi.com``) or set ``FACTURX_BASE_URL``.
+    The host defaults to production (``https://api.facturxapi.com``); pass ``base_url`` or set
+    ``FACTURX_BASE_URL`` to target another one. It must use https.
     """
 
     def __init__(
@@ -75,8 +77,7 @@ class FacturX:
     ) -> None:
         self.api_key = api_key if api_key is not None else os.environ.get("FACTURX_API_KEY", "")
         base = base_url if base_url is not None else os.environ.get("FACTURX_BASE_URL", "")
-        if not base:
-            raise ValueError("base_url is required (or set FACTURX_BASE_URL).")
+        base = base or DEFAULT_BASE_URL
         if urllib.parse.urlparse(base).scheme != "https":
             raise ValueError("base_url must use https.")
         self.base_url = base.rstrip("/")
@@ -240,7 +241,7 @@ class FacturX:
         }
         if auth:
             if not self.api_key:
-                raise ValueError("api_key is required (or set FACTURX_API_KEY).")
+                raise ValueError(f"api_key is required (or set FACTURX_API_KEY). {API_KEY_HELP}.")
             headers["X-API-Key"] = self.api_key
         try:
             status, response_headers, raw = self._send(method, self.base_url + path, headers, body)

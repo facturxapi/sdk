@@ -78,12 +78,20 @@ class ClientTests(unittest.TestCase):
         self.rec = Recorder(replies)
         return fx.FacturX("offline-placeholder", BASE, transport=self.rec)
 
-    def test_no_default_host_and_https_only(self):
+    def test_default_host_is_production_and_https_only(self):
         with patch.dict("os.environ", {}, clear=True):
-            with self.assertRaisesRegex(ValueError, "base_url is required"):
-                fx.FacturX("k")
+            self.assertEqual(fx.FacturX("k").base_url, "https://api.facturxapi.com")
+        with patch.dict("os.environ", {"FACTURX_BASE_URL": "https://api-staging.facturxapi.com/"}, clear=True):
+            self.assertEqual(fx.FacturX("k").base_url, "https://api-staging.facturxapi.com")
         with self.assertRaisesRegex(ValueError, "https"):
             fx.FacturX("k", "http://api-staging.facturxapi.com")
+
+    def test_missing_api_key_says_where_to_get_a_free_one_before_any_request(self):
+        with patch.dict("os.environ", {}, clear=True):
+            client = fx.FacturX(base_url=BASE, transport=Recorder([]))
+            with self.assertRaisesRegex(ValueError, r"https://facturxapi\.com/api-key"):
+                client.dry_run(INVOICE)
+            self.assertEqual(client._send.calls, [])
 
     def test_dry_run_ready_reads_generation_readiness_not_success(self):
         result = self.client(reply(DRY)).dry_run(INVOICE)

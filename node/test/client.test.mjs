@@ -56,14 +56,27 @@ beforeEach(() => {
   };
 });
 
-test("no default host and https only", () => {
+test("default host is production and https only", () => {
   const saved = process.env.FACTURX_BASE_URL;
   delete process.env.FACTURX_BASE_URL;
   try {
-    assert.throws(() => new fx.FacturX({ apiKey: "k" }), /baseUrl is required/);
+    assert.equal(new fx.FacturX({ apiKey: "k" }).baseUrl, "https://api.facturxapi.com");
     assert.throws(() => new fx.FacturX({ apiKey: "k", baseUrl: "http://x.test" }), /https/);
   } finally {
     if (saved !== undefined) process.env.FACTURX_BASE_URL = saved;
+  }
+});
+
+test("a missing API key says where to get a free one, before any request", async () => {
+  const saved = process.env.FACTURX_API_KEY;
+  delete process.env.FACTURX_API_KEY;
+  const calls = [];
+  try {
+    const client = new fx.FacturX({ baseUrl: BASE, transport: async (...args) => { calls.push(args); throw new Error("no call expected"); } });
+    await assert.rejects(() => client.dryRun(INVOICE), /https:\/\/facturxapi\.com\/api-key/);
+    assert.equal(calls.length, 0);
+  } finally {
+    if (saved !== undefined) process.env.FACTURX_API_KEY = saved;
   }
 });
 
