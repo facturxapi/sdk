@@ -173,7 +173,8 @@ def build_server(client_factory: Callable[[], FacturX] | None = None) -> MCPServ
         description=(
             "Validate an existing Factur-X PDF or CII XML file from the local disk against "
             "validation_target (default en16931, the same target as facturx_dry_run and "
-            "facturx_convert; pass france_2026 for the French e-invoicing checks). Returns valid, "
+            "facturx_convert; pass france_2026 to check the invoice is ready for a French PA, "
+            "plateforme agréée). Returns valid, "
             "validationStatus, profile, target and the first errors as reported by the API. Counts "
             "1 invoice of the account quota when the API returns a report."
         ),
