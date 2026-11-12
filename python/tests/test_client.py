@@ -238,6 +238,29 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(client.meta()["public_api_version"], "1.0.0")
         self.assertNotIn("X-API-Key", self.rec.calls[1]["headers"])
 
+    def test_message_catalogue_entry_is_unauthenticated_and_quotes_the_rule(self):
+        client = self.client(
+            reply({"entry_id": "BR-FR-05"}),
+            reply(
+                {
+                    "detail": {
+                        "error": "rule_not_in_served_catalogue",
+                        "message": "No served catalogue message for this rule.",
+                    }
+                },
+                404,
+            ),
+        )
+        self.assertEqual(client.message_catalogue_entry(" BR-FR-05 ")["entry_id"], "BR-FR-05")
+        self.assertEqual(self.rec.calls[0]["url"], BASE + "/api/v1/message-catalogue/BR-FR-05")
+        self.assertNotIn("X-API-Key", self.rec.calls[0]["headers"])
+        with self.assertRaises(fx.ApiError) as caught:
+            client.message_catalogue_entry("a/b")
+        self.assertEqual(
+            (caught.exception.status, caught.exception.code), (404, "rule_not_in_served_catalogue")
+        )
+        self.assertEqual(self.rec.calls[1]["url"], BASE + "/api/v1/message-catalogue/a%2Fb")
+
     def test_extract_uploads_pdf_and_returns_api_result(self):
         client = self.client(reply({"xml": "PD94", "profile": "EN16931"}))
         result = client.extract(PDF, validate=True)

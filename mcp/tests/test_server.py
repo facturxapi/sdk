@@ -34,6 +34,19 @@ FINAL = {
         "validationReadiness": {"packaging": {"status": "passed"}},
     },
 }
+NOT_SERVED = {
+    "detail": {
+        "error": "rule_not_in_served_catalogue",
+        "message": "No served catalogue message for this rule.",
+    }
+}
+CATALOGUE_BR_FR_05 = {
+    "rule": "BR-FR-05",
+    "entry_id": "BR-FR-05",
+    "language": "fr",
+    "title": "Mention obligatoire absente des notes (BR-FR-05)",
+    "enum_labels": {"example": {"PMT": "pmt text", "PMD": "pmd text", "AAB": "aab text"}},
+}
 CONTRACT = {
     "engine_version": "test",
     "fields": [
@@ -149,7 +162,7 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(list(Path(out).iterdir()), [])
 
     def test_explain_error_matches_rule_lists_and_is_unauthenticated(self):
-        server = self.server(reply(CONTRACT))
+        server = self.server(reply(CONTRACT), reply(NOT_SERVED, 404), reply(NOT_SERVED, 404))
         _, data, _ = self.call(server, "facturx_explain_error", {"code_or_rule": "br-s-02"})
         self.assertEqual([m["json_path"] for m in data["matches"]], ["seller.vat_id"])
         self.assertNotIn("X-API-Key", self.calls[0]["headers"])
@@ -158,7 +171,9 @@ class ServerTests(unittest.TestCase):
         )
         self.assertEqual(data["matches"], [])
         self.assertIn("not published yet", data["note"])
-        self.assertEqual(len(self.calls), 1)  # contract fetched once, then cached
+        contract_calls = [c for c in self.calls if c["url"].endswith("/integration-contract")]
+        self.assertEqual(len(contract_calls), 1)  # contract fetched once, then cached
+        self.assertNotIn("catalogue", data)  # 404: no served message, no key
 
     def test_explain_error_links_the_public_error_page_only_when_it_exists(self):
         contract = {
@@ -167,8 +182,18 @@ class ServerTests(unittest.TestCase):
                 {"json_path": "document_notes", "bt": "BT-22", "france_2026_rule": "BR-FR-05"}
             ],
         }
-        server = self.server(reply(contract))
+        server = self.server(
+            reply(contract),
+            reply(CATALOGUE_BR_FR_05),
+            reply(NOT_SERVED, 404),
+            reply(NOT_SERVED, 404),
+        )
         _, data, _ = self.call(server, "facturx_explain_error", {"code_or_rule": " BR-FR-05 "})
+        self.assertEqual(
+            data["catalogue"], CATALOGUE_BR_FR_05
+        )  # the API's text, passed through whole
+        self.assertTrue(self.calls[1]["url"].endswith("/api/v1/message-catalogue/BR-FR-05"))
+        self.assertNotIn("X-API-Key", self.calls[1]["headers"])
         self.assertEqual(data["learn_more"], "https://facturxapi.com/errors/br-fr-05")
         self.assertEqual([m["json_path"] for m in data["matches"]], ["document_notes"])
         _, data, _ = self.call(server, "facturx_explain_error", {"code_or_rule": "BT-1"})
@@ -176,6 +201,8 @@ class ServerTests(unittest.TestCase):
         _, data, _ = self.call(server, "facturx_explain_error", {"code_or_rule": "totals.gross"})
         self.assertNotIn("learn_more", data)  # a JSON path is never turned into a page URL
         self.call(server, "facturx_explain_error", {"code_or_rule": "br-fr-05"})
+        catalogue_calls = [c["url"] for c in self.calls if "/message-catalogue/" in c["url"]]
+        self.assertEqual(len(catalogue_calls), 2)  # BR-FR-05 and BT-1, each once; never a JSON path
         self.assertEqual(
             self.probed,
             ["https://facturxapi.com/errors/br-fr-05", "https://facturxapi.com/errors/bt-1"],

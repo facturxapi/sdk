@@ -68,6 +68,9 @@ def _catalog_page_exists(url: str) -> bool:
         return False
 
 
+_RULE_ID = re.compile(r"^[A-Z]{2}[A-Z0-9_-]*$")
+
+
 def _catalog_url(query: str) -> str | None:
     slug = query.strip().lower()
     return CATALOG_BASE_URL + slug if _CATALOG_SLUG.match(slug) else None
@@ -234,7 +237,9 @@ def build_server(
             "Explain an EN16931 / France 2026 rule (e.g. BR-CO-15), a business term (e.g. BT-1) "
             "or an invoice JSON path (e.g. totals.gross): returns the matching invoice fields from "
             "the API's public integration contract (JSON path, BT, rule, CII XPath, requirement), "
-            "and learn_more, the public error page with the fix and an example, when one exists. "
+            "and, when they exist, catalogue (the message FacturX serves for this rule on a failed "
+            "check: title, minimal fix, fields, causes, example texts; in French) and learn_more "
+            "(the public error page). "
             "Free, no API key needed. API error codes (409/503 …) are not in this public source yet."
         ),
         annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True, idempotentHint=True),
@@ -252,6 +257,17 @@ def build_server(
             "engine_version": cache["contract"].get("engine_version"),
             "matches": matches,
         }
+        rule = code_or_rule.strip().upper()
+        if _RULE_ID.match(rule):
+            if rule not in cache.setdefault("catalogue", {}):
+                try:
+                    cache["catalogue"][rule] = client().message_catalogue_entry(rule)
+                except (
+                    FacturXError
+                ):  # 404: no served message for this rule; anything else: no catalogue
+                    cache["catalogue"][rule] = None
+            if cache["catalogue"][rule] is not None:
+                result["catalogue"] = cache["catalogue"][rule]
         url = _catalog_url(code_or_rule)
         if url is not None:
             if url not in pages:

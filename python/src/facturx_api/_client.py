@@ -188,6 +188,15 @@ class FacturX:
         """``GET /api/v1/integration-contract``: public ERP integration contract."""
         return self._request("GET", "/api/v1/integration-contract", None, {}, None, auth=False)[0]
 
+    def message_catalogue_entry(self, rule: str) -> dict[str, Any]:
+        """``GET /api/v1/message-catalogue/{rule}``: the served catalogue message for one rule (no key).
+
+        ``rule`` is a catalogue entry id (``BR-FR-05``) or an engine id (``BR-FR-05_BT-22_PMT``). A rule with no
+        served message raises :class:`ApiError` with status 404 and code ``rule_not_in_served_catalogue``.
+        """
+        path = "/api/v1/message-catalogue/" + urllib.parse.quote(rule.strip(), safe="")
+        return self._request("GET", path, None, {}, None, auth=False)[0]
+
     # ----------------------------------------------------------------- private
 
     def _convert_call(
