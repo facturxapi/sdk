@@ -181,6 +181,30 @@ class ServerTests(unittest.TestCase):
             ["https://facturxapi.com/errors/br-fr-05", "https://facturxapi.com/errors/bt-1"],
         )  # one probe per page, then cached; no key, no API call
 
+    def test_default_probe_sends_head_with_its_own_user_agent(self):
+        from facturx_mcp import server as module
+
+        seen = []
+
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+        class Opener:
+            def open(self, request, timeout):
+                seen.append((request.get_method(), request.get_header("User-agent"), timeout))
+                return Response()
+
+        with patch.object(module.urllib.request, "build_opener", return_value=Opener()):
+            self.assertTrue(module._catalog_page_exists("https://facturxapi.com/errors/br-fr-05"))
+        self.assertEqual(seen, [("HEAD", module.USER_AGENT, 3)])
+        self.assertTrue(module.USER_AGENT.startswith("facturx-mcp/"))
+
     def test_default_probe_follows_no_redirect_and_fails_closed(self):
         from facturx_mcp import server as module
 

@@ -47,6 +47,8 @@ def _error_payload(exc: FacturXError) -> str:
 
 
 CATALOG_BASE_URL = "https://facturxapi.com/errors/"
+# The site refuses the default Python-urllib agent (403); the server names itself.
+USER_AGENT = f"facturx-mcp/{__version__} (+https://github.com/facturxapi/sdk)"
 _CATALOG_SLUG = re.compile(r"^[a-z]{2}[a-z0-9-]*$")
 
 
@@ -59,7 +61,8 @@ def _catalog_page_exists(url: str) -> bool:
     """True only when the public error page answers 200 itself (no redirect followed, no key sent)."""
     opener = urllib.request.build_opener(_NoRedirect)
     try:
-        with opener.open(urllib.request.Request(url, method="HEAD"), timeout=3) as response:
+        request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
+        with opener.open(request, timeout=3) as response:
             return response.status == 200
     except Exception:  # any failure (network, timeout, TLS) means no link, never an error
         return False
