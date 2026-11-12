@@ -56,6 +56,8 @@ class ServerTests(unittest.TestCase):
         guard.start()
         self.addCleanup(guard.stop)
 
+    pages = {"https://facturxapi.com/errors/br-fr-05"}
+
     def server(self, *replies):
         self.calls = []
         queue = list(replies)
@@ -64,8 +66,15 @@ class ServerTests(unittest.TestCase):
             self.calls.append({"method": method, "url": url, "headers": dict(headers)})
             return queue.pop(0)
 
+        self.probed = []
+
+        def page_exists(url):
+            self.probed.append(url)
+            return url in self.pages
+
         return build_server(
-            lambda: FacturX("offline-placeholder", "https://x.test", transport=transport)
+            lambda: FacturX("offline-placeholder", "https://x.test", transport=transport),
+            page_exists=page_exists,
         )
 
     def call(self, server, name, args):
@@ -150,6 +159,35 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(data["matches"], [])
         self.assertIn("not published yet", data["note"])
         self.assertEqual(len(self.calls), 1)  # contract fetched once, then cached
+
+    def test_explain_error_links_the_public_error_page_only_when_it_exists(self):
+        contract = {
+            "engine_version": "test",
+            "fields": [
+                {"json_path": "document_notes", "bt": "BT-22", "france_2026_rule": "BR-FR-05"}
+            ],
+        }
+        server = self.server(reply(contract))
+        _, data, _ = self.call(server, "facturx_explain_error", {"code_or_rule": " BR-FR-05 "})
+        self.assertEqual(data["learn_more"], "https://facturxapi.com/errors/br-fr-05")
+        self.assertEqual([m["json_path"] for m in data["matches"]], ["document_notes"])
+        _, data, _ = self.call(server, "facturx_explain_error", {"code_or_rule": "BT-1"})
+        self.assertNotIn("learn_more", data)  # page answers 404: no link
+        _, data, _ = self.call(server, "facturx_explain_error", {"code_or_rule": "totals.gross"})
+        self.assertNotIn("learn_more", data)  # a JSON path is never turned into a page URL
+        self.call(server, "facturx_explain_error", {"code_or_rule": "br-fr-05"})
+        self.assertEqual(
+            self.probed,
+            ["https://facturxapi.com/errors/br-fr-05", "https://facturxapi.com/errors/bt-1"],
+        )  # one probe per page, then cached; no key, no API call
+
+    def test_default_probe_follows_no_redirect_and_fails_closed(self):
+        from facturx_mcp import server as module
+
+        self.assertFalse(module._catalog_page_exists("https://facturxapi.com/errors/br-fr-05"))
+        self.assertIsNone(
+            module._NoRedirect().redirect_request(None, None, 301, "", {}, "https://x.test/")
+        )
 
 
 if __name__ == "__main__":

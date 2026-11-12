@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import urllib.request
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -44,6 +46,30 @@ def _error_payload(exc: FacturXError) -> str:
     return json.dumps({"error": out}, ensure_ascii=False)
 
 
+CATALOG_BASE_URL = "https://facturxapi.com/errors/"
+_CATALOG_SLUG = re.compile(r"^[a-z]{2}[a-z0-9-]*$")
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
+        return None
+
+
+def _catalog_page_exists(url: str) -> bool:
+    """True only when the public error page answers 200 itself (no redirect followed, no key sent)."""
+    opener = urllib.request.build_opener(_NoRedirect)
+    try:
+        with opener.open(urllib.request.Request(url, method="HEAD"), timeout=3) as response:
+            return response.status == 200
+    except Exception:  # any failure (network, timeout, TLS) means no link, never an error
+        return False
+
+
+def _catalog_url(query: str) -> str | None:
+    slug = query.strip().lower()
+    return CATALOG_BASE_URL + slug if _CATALOG_SLUG.match(slug) else None
+
+
 def _contract_matches(contract: dict[str, Any], query: str) -> list[dict[str, Any]]:
     q = query.strip().upper()
     keys = ("bt", "bg", "en16931_rule", "france_2026_rule", "target_policy_rule")
@@ -78,9 +104,14 @@ def _contract_matches(contract: dict[str, Any], query: str) -> list[dict[str, An
     return hits
 
 
-def build_server(client_factory: Callable[[], FacturX] | None = None) -> MCPServer:
-    """Create the server. ``client_factory`` is injectable for tests."""
+def build_server(
+    client_factory: Callable[[], FacturX] | None = None,
+    page_exists: Callable[[str], bool] | None = None,
+) -> MCPServer:
+    """Create the server. ``client_factory`` and ``page_exists`` are injectable for tests."""
     make_client = client_factory or (lambda: FacturX())
+    probe = page_exists or _catalog_page_exists
+    pages: dict[str, bool] = {}
     server = MCPServer(
         name="facturx",
         title="FacturX API",
@@ -199,7 +230,8 @@ def build_server(client_factory: Callable[[], FacturX] | None = None) -> MCPServ
         description=(
             "Explain an EN16931 / France 2026 rule (e.g. BR-CO-15), a business term (e.g. BT-1) "
             "or an invoice JSON path (e.g. totals.gross): returns the matching invoice fields from "
-            "the API's public integration contract (JSON path, BT, rule, CII XPath, requirement). "
+            "the API's public integration contract (JSON path, BT, rule, CII XPath, requirement), "
+            "and learn_more, the public error page with the fix and an example, when one exists. "
             "Free, no API key needed. API error codes (409/503 …) are not in this public source yet."
         ),
         annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True, idempotentHint=True),
@@ -217,6 +249,12 @@ def build_server(client_factory: Callable[[], FacturX] | None = None) -> MCPServ
             "engine_version": cache["contract"].get("engine_version"),
             "matches": matches,
         }
+        url = _catalog_url(code_or_rule)
+        if url is not None:
+            if url not in pages:
+                pages[url] = probe(url)
+            if pages[url]:
+                result["learn_more"] = url
         if not matches:
             result["note"] = (
                 "No invoice field of the public integration contract references this value. For an "
