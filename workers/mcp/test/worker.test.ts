@@ -47,12 +47,38 @@ test("tool descriptions do not promise PA acceptance", () => {
   const convert = TOOLS.find((tool) => tool.name === "facturx_convert");
   const explain = TOOLS.find((tool) => tool.name === "facturx_explain_error");
   assert.equal(convert?.description.includes("plateforme agréée"), false);
+  assert.match(
+    convert?.description ?? "",
+    /^Produit le PDF Factur-X et le XML à partir du JSON de facture\. Appelez d'abord facturx_dry_run et lancez facturx_convert quand il renvoie ready=true : le connecteur ne bloque pas un appel direct, et une conversion peut décompter une facture traitée\. /,
+  );
   assert.equal(convert?.description.includes("seulement après"), false);
   assert.equal(convert?.description.includes("recrédit"), false);
   assert.equal(convert?.description.includes("recréit"), false);
   assert.equal(explain?.description.includes("plateforme agréée"), false);
   assert.match(convert?.description ?? "", /1 500 000 octets/);
   assert.match(validate?.description ?? "", /1 500 000 octets/);
+});
+
+test("MCP instructions advise dry_run first and do not claim a gate", async () => {
+  const response = await handleMcp(
+    new Request("https://worker.example/mcp", {
+      method: "POST",
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "t", version: "0" } },
+      }),
+    }),
+    { baseUrl: BASE, apiKey: "", scope: ["mcp:read"] },
+  );
+  const payload = await response.json() as { result: { instructions: string } };
+  assert.equal(
+    payload.result.instructions.includes(
+      "Call facturx_dry_run first (no file); call facturx_convert when it returns ready=true. The connector does not enforce this order. A conversion can consume a processed invoice of the account quota; processedInvoicesCharged is copied from the API unchanged.",
+    ),
+    true,
+  );
 });
 
 test("consent page names FacturX and does not mention a plateforme agréée", () => {
@@ -71,7 +97,7 @@ test("consent page names FacturX and does not mention a plateforme agréée", ()
   assert.match(html, /<h1>Connecter FacturX à Claude &#60;script&#62;<\/h1>/);
   assert.match(html, /https:\/\/facturxapi.com\/api-key/);
   assert.match(html, /Vérifier une facture avant génération et expliquer une règle\./);
-  assert.match(html, /Produire un Factur-X et contrôler un fichier\./);
+  assert.match(html, /Produire un Factur-X et contrôler un fichier : ces appels peuvent décompter des factures traitées du quota de votre clé\./);
   assert.equal(html.includes("aucune facture traitée décomptée"), false);
   assert.equal(html.includes("1 facture traitée"), false);
   assert.equal(html.includes("<br>"), false);

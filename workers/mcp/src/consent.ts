@@ -44,7 +44,7 @@ function scopeCaption(scope: string): string {
     return "Vérifier une facture avant génération et expliquer une règle.";
   }
   if (scope === "mcp:write") {
-    return "Produire un Factur-X et contrôler un fichier.";
+    return "Produire un Factur-X et contrôler un fichier : ces appels peuvent décompter des factures traitées du quota de votre clé.";
   }
   return scope;
 }
