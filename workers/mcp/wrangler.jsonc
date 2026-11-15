@@ -1,0 +1,18 @@
+{
+  // DO NOT DEPLOY and do not put a secret here until fable-cowork confirms
+  // that Workers on this account are billed to the Cloudflare credit.
+  // The KV id is a local placeholder. It is not a real namespace.
+  "name": "facturx-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-14",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+  "vars": {
+    "FACTURX_BASE_URL": "https://api.facturxapi.com"
+  }
+}
