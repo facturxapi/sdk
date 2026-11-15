@@ -47,6 +47,9 @@ test("tool descriptions do not promise PA acceptance", () => {
   const convert = TOOLS.find((tool) => tool.name === "facturx_convert");
   const explain = TOOLS.find((tool) => tool.name === "facturx_explain_error");
   assert.equal(convert?.description.includes("plateforme agréée"), false);
+  assert.equal(convert?.description.includes("seulement après"), false);
+  assert.equal(convert?.description.includes("recrédit"), false);
+  assert.equal(convert?.description.includes("recréit"), false);
   assert.equal(explain?.description.includes("plateforme agréée"), false);
   assert.match(convert?.description ?? "", /1 500 000 octets/);
   assert.match(validate?.description ?? "", /1 500 000 octets/);
@@ -67,8 +70,12 @@ test("consent page names FacturX and does not mention a plateforme agréée", ()
   assert.match(html, /<title>Connecter FacturX à Claude &#60;script&#62;<\/title>/);
   assert.match(html, /<h1>Connecter FacturX à Claude &#60;script&#62;<\/h1>/);
   assert.match(html, /https:\/\/facturxapi.com\/api-key/);
-  assert.match(html, /aucune facture traitée décomptée/);
-  assert.match(html, /1 facture traitée sur le quota de votre clé/);
+  assert.match(html, /Vérifier une facture avant génération et expliquer une règle\./);
+  assert.match(html, /Produire un Factur-X et contrôler un fichier\./);
+  assert.equal(html.includes("aucune facture traitée décomptée"), false);
+  assert.equal(html.includes("1 facture traitée"), false);
+  assert.equal(html.includes("<br>"), false);
+  assert.match(html, /input\[type="password"\],button\{display:block;width:100%/);
   assert.match(html, /Cet accès part vers une application sur cet ordinateur/);
   assert.match(html, /max-width:32rem/);
   assert.equal(html.includes("plateforme agréée"), false);
@@ -447,8 +454,10 @@ test("consent refuses an invalid key without echoing it and never puts it in the
   const location = accepted.headers.get("Location") ?? "";
   assert.equal(location.includes(secret), false);
   assert.equal(completed?.props?.apiKey, secret);
+  const digest = Buffer.from(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret))).toString("hex");
   assert.equal(completed?.userId?.includes(secret), false);
-  assert.equal(completed?.userId?.length, 64);
+  assert.notEqual(completed?.userId, digest);
+  assert.match(completed?.userId ?? "", /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
 });
 
 function form(apiKey: string): FormData {

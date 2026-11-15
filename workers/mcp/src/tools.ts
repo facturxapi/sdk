@@ -60,7 +60,7 @@ export const TOOLS = [
     name: "facturx_convert",
     title: "Produire le Factur-X",
     description:
-      "Produit le PDF Factur-X et le XML à partir du JSON de facture, seulement après un facturx_dry_run dont ready est vrai. Coût : 1 facture traitée, recréitée par l'API si aucun fichier n'est produit. Recopie request_id et processedInvoicesCharged : la valeur envoyée par l'API, ou null si elle ne l'envoie pas, plus les tailles et les sha256. Le PDF n'est renvoyé que s'il tient sous 1 500 000 octets ; au-delà, refus explicite avec la taille et le sha256, sans les octets. La même idempotency_key est renvoyée à l'API pour ne pas traiter une seconde facture.",
+      "Produit le PDF Factur-X et le XML à partir du JSON de facture. Le connecteur ne vérifie pas qu'un facturx_dry_run a déjà renvoyé ready. Il recopie request_id et processedInvoicesCharged : la valeur envoyée par l'API, ou null si elle ne l'envoie pas, plus les tailles et les sha256. Il ne modifie pas ce nombre. Le PDF n'est renvoyé que s'il tient sous 1 500 000 octets ; au-delà, refus explicite avec la taille et le sha256, sans les octets. La même idempotency_key est renvoyée à l'API pour ne pas traiter une seconde facture.",
     inputSchema: {
       type: "object",
       properties: {

@@ -1,4 +1,4 @@
-import { asApiError, facturxFetch, multipart, sha256Hex } from "./api.ts";
+import { asApiError, facturxFetch, multipart } from "./api.ts";
 import { SCOPES } from "./constants.ts";
 import { redirectAllowed } from "./redirects.ts";
 
@@ -35,18 +35,16 @@ export interface OauthLike {
   }): Promise<{ redirectTo: string }>;
 }
 
-const encoder = new TextEncoder();
-
 export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 }
 
 function scopeCaption(scope: string): string {
   if (scope === "mcp:read") {
-    return "Vérifier une facture avant génération et expliquer une règle : aucune facture traitée décomptée.";
+    return "Vérifier une facture avant génération et expliquer une règle.";
   }
   if (scope === "mcp:write") {
-    return "Produire un Factur-X et contrôler un fichier : chaque appel qui produit un fichier ou un rapport compte 1 facture traitée sur le quota de votre clé.";
+    return "Produire un Factur-X et contrôler un fichier.";
   }
   return scope;
 }
@@ -63,7 +61,7 @@ export function consentPage(details: ConsentFacts, handle: string): string {
       const hidden = scope === "mcp:read" ? `<input type="hidden" name="scope" value="${safe}">` : "";
       return `${hidden}<label><input type="checkbox" name="scope" value="${safe}"${required}> ${escapeHtml(scopeCaption(scope))}</label>`;
     })
-    .join("<br>");
+    .join("");
   const loopback = details.redirectIsLoopback
     ? "<p><strong>Cet accès part vers une application sur cet ordinateur.</strong> Continuez seulement si vous venez de lancer la connexion.</p>"
     : "";
@@ -75,11 +73,9 @@ export function consentPage(details: ConsentFacts, handle: string): string {
 <title>Connecter FacturX à ${name}</title>
 <style>
   body{font-family:system-ui,sans-serif;max-width:32rem;margin:1.5rem auto;padding:0 1rem;line-height:1.45}
-  label{display:block;margin:1rem 0}
-  @media (max-width:390px){
-    input[type="password"],button{display:block;width:100%;box-sizing:border-box;font:inherit}
-    button+button{margin-top:.5rem}
-  }
+  label{display:block;margin:.5rem 0}
+  input[type="password"],button{display:block;width:100%;box-sizing:border-box;font:inherit}
+  button+button{margin-top:.5rem}
 </style>
 </head>
 <body>
@@ -198,7 +194,8 @@ export async function handleAuthorize(
   if (!approved.request.scope.includes("mcp:read")) {
     return page("<p>Le client doit demander mcp:read. Rien n'a été enregistré.</p>", 400);
   }
-  const userId = await sha256Hex(encoder.encode(apiKey));
+  // userId is stored in the clear by the OAuth library. It must not be the key or its hash.
+  const userId = crypto.randomUUID();
   const completed = await oauth.completeAuthorization({
     request: approved.request,
     userId,

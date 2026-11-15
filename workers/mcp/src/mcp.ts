@@ -3,8 +3,8 @@ import { callTool, TOOLS, toolByName, type ToolContext } from "./tools.ts";
 
 const INSTRUCTIONS =
   "FacturX API turns a complete ERP invoice JSON into a Factur-X PDF/A-3 (EN16931). " +
-  "Call facturx_dry_run first (no file, no processed invoice). Call facturx_convert only when it says ready=true: " +
-  "a conversion consumes 1 processed invoice of the account quota. " +
+  "facturx_convert does not check that facturx_dry_run already returned ready. " +
+  "It copies processedInvoicesCharged from the API and does not change that number. " +
   "facturx_validate checks a file that already exists. It does not measure acceptance by a plateforme agréée. " +
   "When a call fails, read the structured error (status, code, request_id, missing_fields, ruleId). " +
   "Use facturx_explain_error for an EN16931 rule, a business term, or an invoice JSON path.";
