@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { PDF_MAX_BYTES } from "../src/constants.ts";
-import { handleAuthorize, probeKey, type OauthLike } from "../src/consent.ts";
+import { consentPage, handleAuthorize, probeKey, type OauthLike } from "../src/consent.ts";
 import { handleMcp } from "../src/mcp.ts";
 import { redirectAllowed } from "../src/redirects.ts";
 import { clearContractCache, TOOLS, callTool } from "../src/tools.ts";
@@ -40,6 +40,39 @@ test("tool descriptions do not promise PA acceptance", () => {
   const validate = TOOLS.find((tool) => tool.name === "facturx_validate");
   assert.equal(validate && "idempotentHint" in validate.annotations, false);
   assert.equal(TOOLS.every((tool) => tool.annotations.destructiveHint === false), true);
+  assert.equal(TOOLS.find((tool) => tool.name === "facturx_dry_run")?.title, "Vérifier une facture avant génération");
+  assert.equal(TOOLS.find((tool) => tool.name === "facturx_convert")?.title, "Produire le Factur-X");
+  assert.equal(TOOLS.find((tool) => tool.name === "facturx_validate")?.title, "Contrôler un fichier Factur-X");
+  assert.equal(TOOLS.find((tool) => tool.name === "facturx_explain_error")?.title, "Expliquer une règle ou un champ");
+  const convert = TOOLS.find((tool) => tool.name === "facturx_convert");
+  const explain = TOOLS.find((tool) => tool.name === "facturx_explain_error");
+  assert.equal(convert?.description.includes("plateforme agréée"), false);
+  assert.equal(explain?.description.includes("plateforme agréée"), false);
+  assert.match(convert?.description ?? "", /1 500 000 octets/);
+  assert.match(validate?.description ?? "", /1 500 000 octets/);
+});
+
+test("consent page names FacturX and does not mention a plateforme agréée", () => {
+  const html = consentPage(
+    {
+      clientName: "Claude <script>",
+      clientDomain: "claude.ai",
+      redirectHost: "claude.ai",
+      redirectIsLoopback: true,
+      scope: ["mcp:read", "mcp:write"],
+    },
+    "handle-1",
+  );
+  assert.match(html, /name="viewport" content="width=device-width, initial-scale=1"/);
+  assert.match(html, /<title>Connecter FacturX à Claude &#60;script&#62;<\/title>/);
+  assert.match(html, /<h1>Connecter FacturX à Claude &#60;script&#62;<\/h1>/);
+  assert.match(html, /https:\/\/facturxapi.com\/api-key/);
+  assert.match(html, /aucune facture traitée décomptée/);
+  assert.match(html, /1 facture traitée sur le quota de votre clé/);
+  assert.match(html, /Cet accès part vers une application sur cet ordinateur/);
+  assert.match(html, /max-width:32rem/);
+  assert.equal(html.includes("plateforme agréée"), false);
+  assert.equal(html.includes("Claude <script>"), false);
 });
 
 test("two keys in flight never cross", async () => {

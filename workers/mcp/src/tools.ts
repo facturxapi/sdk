@@ -40,9 +40,9 @@ export function clearContractCache(): void {
 export const TOOLS = [
   {
     name: "facturx_dry_run",
-    title: "Contrôle sans fichier",
+    title: "Vérifier une facture avant génération",
     description:
-      "Vérifie un JSON de facture sans écrire de fichier et sans débiter de facture traitée. ready n'est vrai que si generationReadiness.status vaut ready. Si l'API répond 422, le résultat est un JSON structuré (status, code, request_id, missing_fields, ruleId, issues), pas une phrase, et pas ready=false. processedInvoicesCharged est recopié tel que l'API l'envoie, ou null s'il est absent : ce n'est jamais un 0 inventé. Cela ne mesure pas l'acceptation par une plateforme agréée.",
+      "Vérifie un JSON de facture sans écrire de fichier et sans débiter de facture traitée. ready n'est vrai que si generationReadiness.status vaut ready. Si l'API répond 422, le résultat est un JSON structuré (status, code, request_id, missing_fields, ruleId, issues) ; ready n'est alors pas renseigné. processedInvoicesCharged : la valeur envoyée par l'API, ou null si elle ne l'envoie pas. Cela ne mesure pas l'acceptation par une plateforme agréée.",
     inputSchema: {
       type: "object",
       properties: {
@@ -58,9 +58,9 @@ export const TOOLS = [
   },
   {
     name: "facturx_convert",
-    title: "Produit le Factur-X",
+    title: "Produire le Factur-X",
     description:
-      "Produit le PDF Factur-X et le XML à partir du JSON de facture, seulement après un facturx_dry_run dont ready est vrai. Coût : 1 facture traitée, rendue par l'API si aucun fichier n'est produit. Recopie request_id et processedInvoicesCharged tels que l'API les envoie (null si absents, jamais un 0 inventé), plus les tailles et les sha256. Le PDF n'est renvoyé que s'il tient sous la taille du connecteur ; au-delà, refus explicite avec la taille et le sha256, sans les octets. La même idempotency_key est renvoyée à l'API pour ne pas traiter une seconde facture. Cela ne mesure pas l'acceptation par une plateforme agréée.",
+      "Produit le PDF Factur-X et le XML à partir du JSON de facture, seulement après un facturx_dry_run dont ready est vrai. Coût : 1 facture traitée, recréitée par l'API si aucun fichier n'est produit. Recopie request_id et processedInvoicesCharged : la valeur envoyée par l'API, ou null si elle ne l'envoie pas, plus les tailles et les sha256. Le PDF n'est renvoyé que s'il tient sous 1 500 000 octets ; au-delà, refus explicite avec la taille et le sha256, sans les octets. La même idempotency_key est renvoyée à l'API pour ne pas traiter une seconde facture.",
     inputSchema: {
       type: "object",
       properties: {
@@ -77,9 +77,9 @@ export const TOOLS = [
   },
   {
     name: "facturx_validate",
-    title: "Contrôle un fichier déjà produit",
+    title: "Contrôler un fichier Factur-X",
     description:
-      "Contrôle un PDF Factur-X ou un XML CII déjà produit, envoyé en octets (base64), pas comme un chemin de disque. Cible par défaut : en16931. france_2026 lance les règles françaises de cette cible. Cela ne mesure pas l'acceptation par une plateforme agréée. Coût : 1 facture traitée quand l'API rend un rapport. Recopie processedInvoicesCharged, request_id et validationStatus.",
+      "Contrôle un PDF Factur-X ou un XML CII déjà produit, envoyé en octets (base64), pas comme un chemin de disque. Cible par défaut : en16931. france_2026 lance les règles françaises de cette cible. Cela ne mesure pas l'acceptation par une plateforme agréée. Coût : 1 facture traitée quand l'API rend un rapport. Un fichier de plus de 1 500 000 octets est refusé par le connecteur, sans appel à l'API. Recopie processedInvoicesCharged, request_id et validationStatus.",
     inputSchema: {
       type: "object",
       properties: {
@@ -95,9 +95,9 @@ export const TOOLS = [
   },
   {
     name: "facturx_explain_error",
-    title: "Explique une règle ou un champ",
+    title: "Expliquer une règle ou un champ",
     description:
-      "Explique une règle EN 16931, un BT, ou un chemin JSON, à partir du contrat d'intégration public. Ne débite pas de facture traitée. Ne couvre pas les codes d'erreur HTTP : ce registre n'est pas publié. Cela ne mesure pas l'acceptation par une plateforme agréée.",
+      "Explique une règle EN 16931, un BT, ou un chemin JSON, à partir du contrat d'intégration public. Ne débite pas de facture traitée. Pour une erreur HTTP, lisez error.api_message et error.issues renvoyés par l'appel.",
     inputSchema: {
       type: "object",
       properties: { code_or_rule: { type: "string" } },

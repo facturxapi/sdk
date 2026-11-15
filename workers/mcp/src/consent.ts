@@ -41,6 +41,16 @@ export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 }
 
+function scopeCaption(scope: string): string {
+  if (scope === "mcp:read") {
+    return "Vérifier une facture avant génération et expliquer une règle : aucune facture traitée décomptée.";
+  }
+  if (scope === "mcp:write") {
+    return "Produire un Factur-X et contrôler un fichier : chaque appel qui produit un fichier ou un rapport compte 1 facture traitée sur le quota de votre clé.";
+  }
+  return scope;
+}
+
 export function consentPage(details: ConsentFacts, handle: string): string {
   const name = escapeHtml(details.clientName);
   const origin = details.clientDomain
@@ -51,23 +61,42 @@ export function consentPage(details: ConsentFacts, handle: string): string {
       const safe = escapeHtml(scope);
       const required = scope === "mcp:read" ? " checked disabled" : " checked";
       const hidden = scope === "mcp:read" ? `<input type="hidden" name="scope" value="${safe}">` : "";
-      return `${hidden}<label><input type="checkbox" name="scope" value="${safe}"${required}> ${safe}</label>`;
+      return `${hidden}<label><input type="checkbox" name="scope" value="${safe}"${required}> ${escapeHtml(scopeCaption(scope))}</label>`;
     })
     .join("<br>");
+  const loopback = details.redirectIsLoopback
+    ? "<p><strong>Cet accès part vers une application sur cet ordinateur.</strong> Continuez seulement si vous venez de lancer la connexion.</p>"
+    : "";
   return `<!doctype html>
+<html lang="fr">
+<head>
 <meta charset="utf-8">
-<title>Autoriser ${name}</title>
-<h1>Autoriser ${name} ?</h1>
-<p>${origin} L'accès sera envoyé à <strong>${escapeHtml(details.redirectHost)}</strong>.</p>
-${details.redirectIsLoopback ? "<p><strong>Cet accès part vers une application sur cet ordinateur.</strong> Continuez seulement si vous venez de lancer la connexion.</p>" : ""}
-<p>La clé FacturX collée reste une clé complète. Les portées OAuth limitent les outils de ce connecteur, pas le quota de la clé.</p>
-<p>La clé n'est pas mise dans l'URL. Elle est chiffrée avec l'autorisation. Cela ne mesure pas l'acceptation par une plateforme agréée.</p>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connecter FacturX à ${name}</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:32rem;margin:1.5rem auto;padding:0 1rem;line-height:1.45}
+  label{display:block;margin:1rem 0}
+  @media (max-width:390px){
+    input[type="password"],button{display:block;width:100%;box-sizing:border-box;font:inherit}
+    button+button{margin-top:.5rem}
+  }
+</style>
+</head>
+<body>
+<h1>Connecter FacturX à ${name}</h1>
+<p>${name} pourra utiliser votre clé API FacturX pour vérifier, expliquer et produire des factures Factur-X depuis la conversation. ${origin} L'accès sera envoyé à <strong>${escapeHtml(details.redirectHost)}</strong>.</p>
+${loopback}
 <form method="post">
   <input type="hidden" name="handle" value="${escapeHtml(handle)}">
-  <label>Clé API FacturX <input type="password" name="api_key" autocomplete="off" required></label>
+  <label>Votre clé API FacturX <input type="password" name="api_key" autocomplete="off" required></label>
+  <p>Pas encore de clé ? <a href="https://facturxapi.com/api-key">Créez-en une sur facturxapi.com/api-key</a>.</p>
   <div>${scopes}</div>
+  <p>Ces autorisations limitent ce que ${name} peut faire avec votre clé ; elles ne changent pas son quota.</p>
+  <p>Votre clé est chiffrée avec cette autorisation ; elle n'apparaît jamais dans une adresse web.</p>
   <p><button name="decision" value="approve">Autoriser</button> <button name="decision" value="deny">Refuser</button></p>
-</form>`;
+</form>
+</body>
+</html>`;
 }
 
 export async function probeKey(
