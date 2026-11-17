@@ -64,7 +64,7 @@ enregistré ; relancez la connexion depuis Claude avec la bonne clé.
 | Outil | Portée | Coût |
 |---|---|---|
 | `facturx_dry_run(invoice, validation_target?, output?)` | `mcp:read` | gratuit, aucun fichier écrit |
-| `facturx_convert(invoice, validation_target?, output?, idempotency_key?)` | `mcp:write` | **1 facture traitée** ; renvoie le PDF s'il tient sous 1 500 000 octets |
+| `facturx_convert(invoice, validation_target?, output?, idempotency_key?)` | `mcp:write` | **1 facture traitée quand un fichier est produit** ; renvoie le PDF s'il tient sous 1 500 000 octets |
 | `facturx_validate(file_base64, filename, validation_target?)` | `mcp:write` | 1 facture traitée quand l'API rend un rapport ; fichier de 1 500 000 octets au plus |
 | `facturx_explain_error(code_or_rule)` | `mcp:read` | gratuit |
 
