@@ -39,9 +39,11 @@ Pas encore de clé : [facturxapi.com/api-key](https://facturxapi.com/api-key).
 
 ### Dans Claude (claude.ai ou application de bureau)
 
-1. Paramètres → Connecteurs → Ajouter un connecteur personnalisé.
-2. URL : `https://mcp.facturxapi.com/mcp`, puis Connecter.
-3. La page « Connecter FacturX à … » s'ouvre sur mcp.facturxapi.com :
+1. Compte individuel (Free, Pro, Max) : Customize → Connectors → Add → Add custom connector.
+   Compte Team ou Enterprise : le propriétaire l'ajoute dans Organization settings → Connectors → Add → Custom ;
+   chaque membre fait ensuite l'étape 3 depuis Customize → Connectors.
+2. Donnez un nom (par exemple FacturX) et l'URL `https://mcp.facturxapi.com/mcp`, puis suivez les écrans jusqu'à Add.
+3. Sur le connecteur ajouté, cliquez Connect. La page « Connecter FacturX à … » s'ouvre sur mcp.facturxapi.com :
    - collez votre clé API FacturX ;
    - `mcp:read` (vérifier, expliquer) est imposé ; `mcp:write` (produire et contrôler, décompte des factures traitées)
      est coché par défaut et peut être décoché ;
