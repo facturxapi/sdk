@@ -1,29 +1,39 @@
 # facturx-mcp
 
-Serveur MCP officiel de FacturX API : un agent (Claude, Codex, Cursor…) peut simuler,
-convertir en Factur-X PDF/A-3, valider un fichier et expliquer une règle EN16931, sans
-écrire de code d'intégration. Construit sur le SDK `facturx-api` ; transports stdio et HTTP.
+Vérifiez, simulez et générez des factures Factur-X depuis Claude Code, Codex ou Claude.
+Il vous faut une clé API FacturX, gratuite : https://facturxapi.com/api-key
 
-> Version 0.1.2, sur PyPI : `pip install facturx-mcp`. Testé avec le client MCP officiel (SDK Python), pas encore avec
-> Claude Code, Codex ou Cursor (voir « Ce qui est prouvé »).
+## Installer
 
-## Installation
+**Claude Code**
 
 ```bash
-pip install facturx-mcp                        # installe aussi facturx-api
-export FACTURX_API_KEY=…   # clé Sandbox gratuite : https://facturxapi.com/api-key
-# FACTURX_BASE_URL est facultatif à partir de 0.1.2 (production par défaut) ; obligatoire en 0.1.1
-facturx-mcp                                   # stdio (défaut)
-facturx-mcp --transport streamable-http --port 8765   # HTTP : http://127.0.0.1:8765/mcp
+claude mcp add --scope user facturx -e FACTURX_API_KEY=votre_clé -- uvx facturx-mcp
 ```
 
-Déclaration type d'un serveur stdio dans un client MCP (format `mcpServers`, **non testée**
-avec un client du marché) :
+**Codex**
 
-```json
-{"mcpServers": {"facturx": {"command": "facturx-mcp",
-  "env": {"FACTURX_API_KEY": "…"}}}}
+```bash
+codex mcp add facturx --env FACTURX_API_KEY=votre_clé -- uvx facturx-mcp
 ```
+
+**Claude (claude.ai ou application de bureau)** : Customize → Connectors → Add → Add custom connector,
+URL `https://mcp.facturxapi.com/mcp`, puis collez votre clé sur la page de connexion.
+
+Les deux commandes utilisent `uvx`, fourni par [uv](https://docs.astral.sh/uv/getting-started/installation/).
+
+## Essayer
+
+Dans une session : « Explique la règle BR-CO-15 avec FacturX », ou « Vérifie cette facture avec FacturX » en joignant un PDF.
+
+## Outils
+
+| Outil | Ce qu'il fait | Coût |
+|---|---|---|
+| `facturx_explain_error` | explique une règle (BR-…), un champ (BT-…) | gratuit |
+| `facturx_dry_run` | simule la génération et liste ce qui manque | gratuit |
+| `facturx_convert` | produit le Factur-X PDF/A-3 | 1 facture |
+| `facturx_validate` | contrôle un fichier existant | 1 facture |
 
 ## Connecteur hébergé (sans installation)
 
@@ -74,7 +84,33 @@ Différence avec le serveur local : `facturx_validate` reçoit le fichier en bas
 `facturx_convert` renvoie les octets au lieu d'écrire dans un dossier. Les outils ne mesurent pas l'acceptation
 par une plateforme agréée.
 
-## Outils
+## Avancé
+
+Serveur MCP officiel de FacturX API : un agent (Claude, Codex, Cursor…) peut simuler,
+convertir en Factur-X PDF/A-3, valider un fichier et expliquer une règle EN16931, sans
+écrire de code d'intégration. Construit sur le SDK `facturx-api` ; transports stdio et HTTP.
+> Version 0.1.2, sur PyPI : `pip install facturx-mcp`. Testé avec le client MCP officiel (SDK Python), pas encore avec
+> Claude Code, Codex ou Cursor (voir « Ce qui est prouvé »).
+
+### Installation (pip)
+
+```bash
+pip install facturx-mcp                        # installe aussi facturx-api
+export FACTURX_API_KEY=…   # clé Sandbox gratuite : https://facturxapi.com/api-key
+# FACTURX_BASE_URL est facultatif à partir de 0.1.2 (production par défaut) ; obligatoire en 0.1.1
+facturx-mcp                                   # stdio (défaut)
+facturx-mcp --transport streamable-http --port 8765   # HTTP : http://127.0.0.1:8765/mcp
+```
+
+Déclaration type d'un serveur stdio dans un client MCP (format `mcpServers`, **non testée**
+avec un client du marché) :
+
+```json
+{"mcpServers": {"facturx": {"command": "facturx-mcp",
+  "env": {"FACTURX_API_KEY": "…"}}}}
+```
+
+### Outils : détail
 
 | Outil | Ce qu'il fait | Coût |
 |---|---|---|
