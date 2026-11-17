@@ -4,7 +4,7 @@ Serveur MCP officiel de FacturX API : un agent (Claude, Codex, Cursor…) peut s
 convertir en Factur-X PDF/A-3, valider un fichier et expliquer une règle EN16931, sans
 écrire de code d'intégration. Construit sur le SDK `facturx-api` ; transports stdio et HTTP.
 
-> Version 0.1.1, sur PyPI : `pip install facturx-mcp`. Testé avec le client MCP officiel (SDK Python), pas encore avec
+> Version 0.1.2, sur PyPI : `pip install facturx-mcp`. Testé avec le client MCP officiel (SDK Python), pas encore avec
 > Claude Code, Codex ou Cursor (voir « Ce qui est prouvé »).
 
 ## Installation
@@ -24,6 +24,53 @@ avec un client du marché) :
 {"mcpServers": {"facturx": {"command": "facturx-mcp",
   "env": {"FACTURX_API_KEY": "…"}}}}
 ```
+
+## Connecteur hébergé (sans installation)
+
+Le même jeu d'outils existe en serveur MCP hébergé, sans rien installer :
+
+```text
+https://mcp.facturxapi.com/mcp
+```
+
+La connexion passe par OAuth. Votre clé API FacturX est saisie une fois, sur la page de consentement de
+mcp.facturxapi.com ; elle n'apparaît jamais dans une adresse web ni dans la configuration du client.
+Pas encore de clé : [facturxapi.com/api-key](https://facturxapi.com/api-key).
+
+### Dans Claude (claude.ai ou application de bureau)
+
+1. Paramètres → Connecteurs → Ajouter un connecteur personnalisé.
+2. URL : `https://mcp.facturxapi.com/mcp`, puis Connecter.
+3. La page « Connecter FacturX à … » s'ouvre sur mcp.facturxapi.com :
+   - collez votre clé API FacturX ;
+   - `mcp:read` (vérifier, expliquer) est imposé ; `mcp:write` (produire et contrôler, décompte des factures traitées)
+     est coché par défaut et peut être décoché ;
+   - Autoriser.
+4. Demandez par exemple : « vérifie cette facture avec FacturX ».
+
+Si la clé est refusée, la page l'affiche (« Cette clé est refusée. Elle n'a pas été enregistrée. ») et rien n'est
+enregistré ; relancez la connexion depuis Claude avec la bonne clé.
+
+### Clients
+
+| Client | État |
+|---|---|
+| Claude (claude.ai, application de bureau) | adresses de retour acceptées ; parcours de consentement vérifié le 17/11/2026 ; premier appel d'outil depuis Claude en cours de vérification |
+| ChatGPT (connecteurs) | adresses de retour acceptées ; **non testé** |
+| Claude Code, Cursor, Codex, autres clients locaux | **non pris en charge par le connecteur hébergé** : leur retour OAuth passe par `localhost`, que le serveur refuse. Utilisez le serveur local ci-dessus (`pip install facturx-mcp`). |
+
+### Outils et coût
+
+| Outil | Portée | Coût |
+|---|---|---|
+| `facturx_dry_run(invoice, validation_target?, output?)` | `mcp:read` | gratuit, aucun fichier écrit |
+| `facturx_convert(invoice, validation_target?, output?, idempotency_key?)` | `mcp:write` | **1 facture traitée** ; renvoie le PDF s'il tient sous 1 500 000 octets |
+| `facturx_validate(file_base64, filename, validation_target?)` | `mcp:write` | 1 facture traitée quand l'API rend un rapport ; fichier de 1 500 000 octets au plus |
+| `facturx_explain_error(code_or_rule)` | `mcp:read` | gratuit |
+
+Différence avec le serveur local : `facturx_validate` reçoit le fichier en base64 (pas de chemin de disque) et
+`facturx_convert` renvoie les octets au lieu d'écrire dans un dossier. Les outils ne mesurent pas l'acceptation
+par une plateforme agréée.
 
 ## Outils
 
