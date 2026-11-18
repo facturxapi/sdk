@@ -8,20 +8,33 @@ Il vous faut une clé API FacturX, gratuite : https://facturxapi.com/api-key
 **Claude Code**
 
 ```bash
-claude mcp add --scope user facturx -e FACTURX_API_KEY=votre_clé -- uvx facturx-mcp
+claude mcp add --scope user --transport http facturx https://mcp.facturxapi.com/mcp
 ```
+
+Puis, dans Claude Code : `/mcp`, choisissez `facturx`, puis Authenticate.
 
 **Codex**
 
 ```bash
-codex mcp add facturx --env FACTURX_API_KEY=votre_clé -- uvx facturx-mcp
+codex mcp add facturx --url https://mcp.facturxapi.com/mcp
 ```
 
-**Claude (claude.ai ou application de bureau)** : ajoutez le connecteur `https://mcp.facturxapi.com/mcp`
-(étapes dans [Connecteur hébergé](#connecteur-hébergé-sans-installation)) ; votre clé se colle sur la page
-« Connecter FacturX à … » qui s'ouvre à la connexion. Le premier appel d'outil depuis Claude est en cours de vérification.
+Si la connexion ne s'ouvre pas d'elle-même : `codex mcp login facturx`.
 
-Les deux commandes utilisent `uvx`, fourni par [uv](https://docs.astral.sh/uv/getting-started/installation/).
+**Claude (claude.ai ou application de bureau)** : ajoutez le connecteur `https://mcp.facturxapi.com/mcp`
+(étapes dans [Connecteur hébergé](#connecteur-hébergé-sans-installation)).
+
+La connexion ouvre une page « Connecter FacturX à … » qui demande votre clé API. Elle reste sur cette page : elle n'apparaît
+ni dans une commande ni dans un fichier de configuration. Vérifié jusqu'à cette page : Claude Code et Codex le 18/11/2026,
+Claude le 17/11/2026 ; le premier appel d'outil est en cours de vérification.
+
+**Sans connecteur hébergé (serveur local)** : la même chose tourne sur votre machine avec `uvx`, fourni par
+[uv](https://docs.astral.sh/uv/getting-started/installation/) :
+
+```bash
+claude mcp add --scope user facturx -e FACTURX_API_KEY=votre_clé -- uvx facturx-mcp
+codex mcp add facturx --env FACTURX_API_KEY=votre_clé -- uvx facturx-mcp
+```
 
 ## Essayer
 
@@ -70,8 +83,9 @@ enregistré ; relancez la connexion depuis Claude avec la bonne clé.
 |---|---|
 | Claude (claude.ai, application de bureau) | adresses de retour acceptées ; parcours de consentement vérifié le 17/11/2026 ; premier appel d'outil depuis Claude en cours de vérification |
 | ChatGPT (connecteurs) | adresses de retour acceptées ; **non testé** |
-| Codex (`codex mcp add facturx --url https://mcp.facturxapi.com/mcp`, puis `codex mcp login facturx`) | retour OAuth local (127.0.0.1) accepté, PKCE S256 exigé ; connexion vérifiée le 18/11/2026 jusqu'à la page de consentement ; premier appel d'outil non vérifié |
-| Claude Code, Cursor, autres clients locaux | retours OAuth locaux (127.0.0.1, [::1], localhost) acceptés, PKCE S256 exigé ; **non essayés** avec le connecteur hébergé. Le serveur local reste disponible : commandes en haut de page, ou `pip install facturx-mcp` dans « Avancé ». |
+| Claude Code (`claude mcp add --scope user --transport http facturx https://mcp.facturxapi.com/mcp`, puis `/mcp` → Authenticate) | retour OAuth local (localhost) accepté, PKCE S256 exigé, portées lecture et écriture demandées ; connexion vérifiée le 18/11/2026 jusqu'à la page de consentement ; premier appel d'outil non vérifié |
+| Codex (`codex mcp add facturx --url https://mcp.facturxapi.com/mcp`, puis `codex mcp login facturx` si besoin) | retour OAuth local (127.0.0.1) accepté, PKCE S256 exigé, portées lecture et écriture demandées ; connexion vérifiée le 18/11/2026 jusqu'à la page de consentement ; premier appel d'outil non vérifié |
+| Cursor, autres clients locaux | retours OAuth locaux (127.0.0.1, [::1], localhost) acceptés, PKCE S256 exigé ; **non essayés** avec le connecteur hébergé. Le serveur local reste disponible : commandes `uvx` en haut de page, ou `pip install facturx-mcp` dans « Avancé ». |
 
 ### Outils et coût
 
