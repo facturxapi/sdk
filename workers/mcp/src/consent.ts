@@ -1,6 +1,6 @@
 import { asApiError, facturxFetch, multipart } from "./api.ts";
 import { SCOPES } from "./constants.ts";
-import { redirectAllowed } from "./redirects.ts";
+import { isLoopbackRedirect, redirectAllowed } from "./redirects.ts";
 
 export interface ConsentFacts {
   clientName: string;
@@ -14,7 +14,16 @@ export interface AuthRequestLike {
   redirectUri: string;
   scope: string[];
   clientId: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
 }
+
+/** A loopback callback is a native client that cannot keep a secret: PKCE S256 or nothing. */
+export function loopbackWithoutS256(request: AuthRequestLike): boolean {
+  return isLoopbackRedirect(request.redirectUri) && (!request.codeChallenge || request.codeChallengeMethod !== "S256");
+}
+
+const PKCE_REQUIRED = "<p>Une application locale doit utiliser PKCE (méthode S256). Rien n'a été enregistré.</p>";
 
 export interface OauthLike {
   parseAuthRequest(request: Request): Promise<AuthRequestLike>;
@@ -151,8 +160,9 @@ export async function handleAuthorize(
   if (request.method === "GET") {
     const auth = await oauth.parseAuthRequest(request);
     if (!redirectAllowed(auth.redirectUri)) {
-      return page("<p>Cette adresse de retour n'est pas celle de Claude ni de ChatGPT.</p>", 400);
+      return page("<p>Cette adresse de retour n'est pas celle de Claude, de ChatGPT ni d'une application locale.</p>", 400);
     }
+    if (loopbackWithoutS256(auth)) return page(PKCE_REQUIRED, 400);
     const details = await oauth.describeConsent(auth);
     const consent = await oauth.beginConsent(auth);
     return page(consentPage(details, consent.handle), 200, consent.headers);
@@ -189,8 +199,9 @@ export async function handleAuthorize(
   }
   const approved = await oauth.approveConsent(request, handle, { scope: granted });
   if (!redirectAllowed(approved.request.redirectUri)) {
-    return page("<p>Cette adresse de retour n'est pas celle de Claude ni de ChatGPT.</p>", 400);
+    return page("<p>Cette adresse de retour n'est pas celle de Claude, de ChatGPT ni d'une application locale.</p>", 400);
   }
+  if (loopbackWithoutS256(approved.request)) return page(PKCE_REQUIRED, 400);
   if (!approved.request.scope.includes("mcp:read")) {
     return page("<p>Le client doit demander mcp:read. Rien n'a été enregistré.</p>", 400);
   }

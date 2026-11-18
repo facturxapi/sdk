@@ -17,7 +17,7 @@ export type OutputName = (typeof OUTPUTS)[number];
 
 export type TargetName = (typeof TARGETS)[number];
 
-/** Claude hosted apps and ChatGPT connectors. No wildcard, no loopback. */
+/** Claude hosted apps and ChatGPT connectors. No wildcard. Loopback callbacks are handled in redirects.ts. */
 export const REDIRECT_URIS = {
   claude: [
     "https://claude.ai/api/mcp/auth_callback",

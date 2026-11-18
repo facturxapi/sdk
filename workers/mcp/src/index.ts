@@ -59,7 +59,9 @@ function providerFor(request: Request, env: Env): OAuthProvider<Env> {
     tokenEndpoint: "/token",
     clientRegistrationEndpoint: "/register",
     scopesSupported: [...SCOPES],
-    requiredScopes: ["mcp:read"],
+    // Both scopes are announced (protected resource metadata and the 401 challenge), so a client asks
+    // for write too; the consent page keeps mcp:write checked by default and optional. Not enforced here.
+    requiredScopes: [...SCOPES],
     clientIdMetadataDocumentEnabled: true,
     disallowPublicClientRegistration: false,
     clientRegistrationCallback(options) {
