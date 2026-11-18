@@ -105,8 +105,8 @@ par une plateforme agréée.
 Serveur MCP officiel de FacturX API : un agent (Claude, Codex, Cursor…) peut simuler,
 convertir en Factur-X PDF/A-3, valider un fichier et expliquer une règle EN16931, sans
 écrire de code d'intégration. Construit sur le SDK `facturx-api` ; transports stdio et HTTP.
-> Version 0.1.2, sur PyPI : `pip install facturx-mcp`. Testé avec le client MCP officiel (SDK Python), pas encore avec
-> Claude Code, Codex ou Cursor (voir « Ce qui est prouvé »).
+> Version 0.1.2, sur PyPI : `pip install facturx-mcp`. Serveur local testé avec le client MCP officiel (SDK Python), voir
+> « Ce qui est prouvé ». Depuis Claude Code et Codex, voir « Installer » en haut de page.
 
 ### Installation (pip)
 
@@ -162,9 +162,12 @@ facturx_validate -> valid=true, validationStatus=valid, profile EN16931, 0 erreu
   `invalid_api_key` et le message API intact (`traces/http-staging-*.json`).
 - Aucune clé dans les traces ni dans les journaux du serveur (vérifié).
 
-**Pas encore prouvé** : essai depuis Claude Code, Codex ou Cursor (à faire depuis une session
-du fondateur) ; `xml_cii`, URL signée, 409/503 réels ; soumission aux annuaires MCP (geste du
-fondateur).
+**Pas encore prouvé** (au 06/11/2026) : essai depuis Claude Code, Codex ou Cursor ; `xml_cii`, URL signée, 409/503 réels ;
+soumission aux annuaires MCP (geste du fondateur).
+
+**Mise à jour du 18/11/2026** : avec le connecteur hébergé, Claude Code et Codex sont vérifiés jusqu'à la page
+de consentement (lecture et écriture demandées) ; le premier appel d'outil depuis ces clients n'est pas encore
+vérifié. Cursor : non essayé.
 
 <!-- mcp-name: com.facturxapi/mcp -->
 mcp-name: com.facturxapi/mcp
