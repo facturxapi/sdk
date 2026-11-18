@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PDF_MAX_BYTES } from "../src/constants.ts";
+import { PDF_MAX_BYTES, SCOPES } from "../src/constants.ts";
 import { consentPage, handleAuthorize, probeKey, type OauthLike } from "../src/consent.ts";
 import { handleMcp } from "../src/mcp.ts";
 import { redirectAllowed, registrationRedirectsAllowed } from "../src/redirects.ts";
@@ -578,4 +578,14 @@ test("a loopback approval without PKCE S256 never completes the authorization", 
   );
   assert.equal(res.status, 400);
   assert.equal(completed, false);
+});
+
+test("the resource announces both scopes (protected resource metadata and the 401 challenge)", async () => {
+  // index.ts imports cloudflare:workers, which node cannot load: the end-to-end proof runs against wrangler dev.
+  // This guard keeps the config itself announcing every scope the consent page offers.
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  assert.match(source, /requiredScopes:\s*\[\.\.\.SCOPES\]/);
+  assert.doesNotMatch(source, /requiredScopes:\s*\["mcp:read"\]/);
+  assert.deepEqual([...SCOPES], ["mcp:read", "mcp:write"]);
 });
