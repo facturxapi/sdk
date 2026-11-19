@@ -7,6 +7,7 @@ import {
 import { SCOPES } from "./constants.ts";
 import { handleAuthorize } from "./consent.ts";
 import { handleMcp } from "./mcp.ts";
+import { handlePublicMcp, PUBLIC_ROUTE } from "./public.ts";
 import { registrationRedirectsAllowed } from "./redirects.ts";
 
 export interface Env {
@@ -14,6 +15,10 @@ export interface Env {
   FACTURX_BASE_URL: string;
   PUBLIC_BASE_URL?: string;
   OAUTH_PROVIDER: OAuthHelpers;
+  /** Keyless trial (POST /mcp/public): the service key lives only in the deployment secrets. Absent → 503. */
+  PUBLIC_VALIDATE_API_KEY?: string;
+  PUBLIC_IP_HOURLY_LIMIT?: string;
+  PUBLIC_DAILY_CAP?: string;
 }
 
 function publicOrigin(request: Request, configured: string | undefined): string {
@@ -79,6 +84,8 @@ function providerFor(request: Request, env: Env): OAuthProvider<Env> {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // Before the OAuth provider: its apiRoute "/mcp" also matches "/mcp/public" by prefix.
+    if (new URL(request.url).pathname === PUBLIC_ROUTE) return handlePublicMcp(request, env);
     return providerFor(request, env).fetch(request, env, ctx);
   },
 };

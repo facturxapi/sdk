@@ -10,6 +10,10 @@ const INSTRUCTIONS =
 
 export interface McpRequestContext extends ToolContext {
   scope: readonly string[];
+  /** When set (keyless trial), only these tools are listed and callable. */
+  allowedTools?: readonly string[];
+  /** When set (keyless trial), added as a second text block after a tool result; structuredContent stays the API data. */
+  notice?: string;
 }
 
 export async function handleMcp(request: Request, ctx: McpRequestContext): Promise<Response> {
@@ -47,7 +51,7 @@ export async function handleMcp(request: Request, ctx: McpRequestContext): Promi
   if (method === "ping") return jsonRpc(id, {});
   if (method === "tools/list") {
     return jsonRpc(id, {
-      tools: TOOLS.map((tool) => ({
+      tools: TOOLS.filter((tool) => !ctx.allowedTools || ctx.allowedTools.includes(tool.name)).map((tool) => ({
         name: tool.name,
         title: tool.title,
         description: tool.description,
@@ -61,7 +65,7 @@ export async function handleMcp(request: Request, ctx: McpRequestContext): Promi
     const name = typeof params.name === "string" ? params.name : "";
     const args = params.arguments && typeof params.arguments === "object" ? (params.arguments as Record<string, unknown>) : {};
     const tool = toolByName(name);
-    if (!tool) {
+    if (!tool || (ctx.allowedTools && !ctx.allowedTools.includes(tool.name))) {
       return jsonRpc(id, toolError({ error: { type: "Error", message: "unknown tool" } }));
     }
     if (!ctx.scope.includes(tool.scope)) {
@@ -73,7 +77,7 @@ export async function handleMcp(request: Request, ctx: McpRequestContext): Promi
     const result = await callTool(name, args, ctx);
     const text = JSON.stringify(result.data);
     return jsonRpc(id, {
-      content: [{ type: "text", text }],
+      content: ctx.notice ? [{ type: "text", text }, { type: "text", text: ctx.notice }] : [{ type: "text", text }],
       structuredContent: result.data,
       isError: result.isError,
     });
