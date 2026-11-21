@@ -26,7 +26,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 # Names the client family and versions only: no user, machine, path or key in the header.
 USER_AGENT = f"facturx-mcp/{__version__} facturx-api-python/{SDK_VERSION}"
