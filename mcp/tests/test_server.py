@@ -151,6 +151,32 @@ class ServerTests(unittest.TestCase):
         self.assertIn("not published yet", data["note"])
         self.assertEqual(len(self.calls), 1)  # contract fetched once, then cached
 
+    def test_the_default_client_names_the_mcp_package_and_nothing_else(self):
+        # The API counts MCP traffic by a User-Agent that starts with « facturx-mcp ». The header carries
+        # the two package versions only: no user, machine, path or key may ever be added to it.
+        report = {"valid": True, "validationStatus": "valid", "profile": "EN16931", "errors": []}
+        seen = []
+
+        def underlying(method, url, headers, body):
+            seen.append(dict(headers))
+            return reply(report)
+
+        env = {"FACTURX_API_KEY": "offline-placeholder", "FACTURX_BASE_URL": "https://x.test"}
+        with (
+            tempfile.TemporaryDirectory() as tmp,
+            patch.dict("os.environ", env),
+            patch("facturx_mcp.server.urllib_transport", return_value=underlying),
+        ):
+            path = Path(tmp) / "factur-x.xml"
+            path.write_bytes(b"<?xml version='1.0'?><rsm:CrossIndustryInvoice/>")
+            is_error, _, _ = self.call(build_server(), "facturx_validate", {"file_path": str(path)})
+        self.assertFalse(is_error)
+        self.assertEqual(len(seen), 1)
+        self.assertEqual(seen[0]["X-API-Key"], "offline-placeholder")  # the key travels in its own header
+        self.assertRegex(
+            seen[0]["User-Agent"], r"^facturx-mcp/\d+\.\d+\.\d+ facturx-api-python/\d+\.\d+\.\d+$"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

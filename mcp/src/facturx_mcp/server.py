@@ -8,16 +8,41 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
-from facturx_api import ApiError, FacturX, FacturXError, NotDeliveredError, TransportError
+from facturx_api import (
+    ApiError,
+    FacturX,
+    FacturXError,
+    NotDeliveredError,
+    Transport,
+    TransportError,
+    urllib_transport,
+)
+from facturx_api import __version__ as SDK_VERSION
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 __version__ = "0.1.2"
+
+# Names the client family and versions only: no user, machine, path or key in the header.
+USER_AGENT = f"facturx-mcp/{__version__} facturx-api-python/{SDK_VERSION}"
+
+
+def with_user_agent(send: Transport) -> Transport:
+    """Wrap an SDK transport so every request names this MCP server as its client."""
+
+    def wrapped(method: str, url: str, headers: Mapping[str, str], body: bytes | None) -> Any:
+        return send(method, url, {**headers, "User-Agent": USER_AGENT}, body)
+
+    return wrapped
+
+
+def default_client() -> FacturX:
+    return FacturX(transport=with_user_agent(urllib_transport()))
 
 INSTRUCTIONS = (
     "FacturX API turns a complete ERP invoice JSON into a Factur-X PDF/A-3 (EN16931). "
@@ -80,7 +105,7 @@ def _contract_matches(contract: dict[str, Any], query: str) -> list[dict[str, An
 
 def build_server(client_factory: Callable[[], FacturX] | None = None) -> MCPServer:
     """Create the server. ``client_factory`` is injectable for tests."""
-    make_client = client_factory or (lambda: FacturX())
+    make_client = client_factory or default_client
     server = MCPServer(
         name="facturx",
         title="FacturX API",
