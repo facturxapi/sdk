@@ -3,6 +3,8 @@
 Official clients for the [FacturX API](https://facturxapi.com): check an invoice with a dry run, convert it to a
 Factur-X PDF/A-3 file, validate it — from Python, Node.js, a command line, or an MCP-compatible assistant.
 
+[![facturxapi/sdk MCP server](https://glama.ai/mcp/servers/facturxapi/sdk/badges/score.svg)](https://glama.ai/mcp/servers/facturxapi/sdk)
+
 | Directory | Package | Registry | What it is |
 |---|---|---|---|
 | [`python/`](python) | `facturx-api` | PyPI | Python client and the `facturx` command (`dry-run`, `convert`, `validate`) |
@@ -10,8 +12,12 @@ Factur-X PDF/A-3 file, validate it — from Python, Node.js, a command line, or 
 | [`mcp/`](mcp) | `facturx-mcp` | PyPI | MCP server (registry name `com.facturxapi/mcp`); an npm launcher may follow |
 | [`examples/`](examples) | — | — | Runnable examples with their recorded output |
 
-**Status: alpha.** `facturx-api` and `facturx-mcp` 0.1.1 are on PyPI (`pip install facturx-api`, `pip install facturx-mcp`);
-`@facturxapi/sdk` 0.1.1 is on npm (`npm install @facturxapi/sdk`). See [`RELEASING.md`](RELEASING.md).
+**Status: alpha.** Checked against the registries on 25/11/2026: `facturx-api` 0.1.2 is on PyPI (11/11/2026),
+`facturx-mcp` 0.1.3 is on PyPI (21/11/2026), `@facturxapi/sdk` 0.1.2 is on npm (11/11/2026).
+`pip install facturx-api`, `pip install facturx-mcp`, `npm install @facturxapi/sdk`. See [`RELEASING.md`](RELEASING.md).
+
+Hosted connector, nothing to install: `https://mcp.facturxapi.com/mcp`. Setup for each client, and what has been
+verified so far, in [`mcp/README.md`](mcp/README.md).
 
 ## Design choices worth knowing
 
@@ -20,8 +26,9 @@ Factur-X PDF/A-3 file, validate it — from Python, Node.js, a command line, or 
   reported as done when the final file is present, not on the HTTP status alone.
 - **One idempotency key per operation**, and signed download URLs are fetched without your API key.
 - **No automatic retry** of 409 / 503 answers: the caller decides.
-- The examples in [`examples/`](examples) were recorded against the staging host and say so; they will move to the
-  production host with the first release.
+- The outputs recorded in [`examples/`](examples) are from the staging host on 06/11/2026 (release `900685311ea7`)
+  and say so. Since 0.1.2 the example code calls production (`https://api.facturxapi.com`) by default; those recorded
+  runs are not a production proof.
 
 ## Tests (offline, no network, no API key)
 
