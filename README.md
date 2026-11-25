@@ -16,9 +16,8 @@ Factur-X PDF/A-3 file, validate it — from Python, Node.js, a command line, or 
 `facturx-mcp` 0.1.3 is on PyPI (21/11/2026), `@facturxapi/sdk` 0.1.2 is on npm (11/11/2026).
 `pip install facturx-api`, `pip install facturx-mcp`, `npm install @facturxapi/sdk`. See [`RELEASING.md`](RELEASING.md).
 
-Hosted connector `https://mcp.facturxapi.com/mcp` — [`mcp/README.md`](mcp/README.md): checked up to the consent page
-(Claude on 17/11/2026; Claude Code and Codex on 18/11/2026, read and write requested). The first tool call from those
-clients is not yet verified. ChatGPT: callbacks accepted, not tested. Cursor: not tried with the hosted connector.
+Hosted connector, nothing to install: `https://mcp.facturxapi.com/mcp`. Setup for each client, and what has been
+verified so far, in [`mcp/README.md`](mcp/README.md).
 
 ## Design choices worth knowing
 
