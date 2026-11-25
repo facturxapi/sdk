@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PDF_MAX_BYTES } from "../src/constants.ts";
+import { PDF_MAX_BYTES, SCOPES } from "../src/constants.ts";
 import { consentPage, handleAuthorize, probeKey, type OauthLike } from "../src/consent.ts";
 import { handleMcp } from "../src/mcp.ts";
-import { redirectAllowed } from "../src/redirects.ts";
+import { redirectAllowed, registrationRedirectsAllowed } from "../src/redirects.ts";
 import { clearContractCache, TOOLS, callTool } from "../src/tools.ts";
 
 const BASE = "https://api.facturxapi.com";
@@ -18,13 +18,13 @@ function headerValue(headers: HeadersInit | undefined, name: string): string | n
   return new Headers(headers).get(name);
 }
 
-test("redirects are Claude and ChatGPT only", () => {
+test("redirects are Claude, ChatGPT or a loopback callback", () => {
   assert.equal(redirectAllowed("https://claude.ai/api/mcp/auth_callback"), true);
   assert.equal(redirectAllowed("https://claude.com/api/mcp/auth_callback"), true);
   assert.equal(redirectAllowed("https://chatgpt.com/connector_platform_oauth_redirect"), true);
   assert.equal(redirectAllowed("https://chatgpt.com/connector/oauth/abc_123"), true);
   assert.equal(redirectAllowed("https://chatgpt.com/connector/oauth/abc/extra"), false);
-  assert.equal(redirectAllowed("http://localhost:8787/callback"), false);
+  assert.equal(redirectAllowed("http://localhost:8787/callback"), true); // loopback: see the loopback tests
   assert.equal(redirectAllowed("https://evil.example/callback"), false);
   assert.equal(redirectAllowed("https://claude.ai/api/mcp/auth_callback?next=/"), false);
 });
@@ -495,3 +495,97 @@ function form(apiKey: string): FormData {
   data.append("scope", "mcp:write");
   return data;
 }
+
+
+test("loopback callbacks: 127.0.0.1, [::1] and localhost on any port; lookalikes refused", () => {
+  for (const ok of [
+    "http://127.0.0.1:53682/callback",
+    "http://[::1]:41234/oauth/callback",
+    "http://localhost:33418/callback",
+    "http://localhost/callback",
+  ]) {
+    assert.equal(redirectAllowed(ok), true, ok);
+  }
+  for (const ko of [
+    "http://localhost.evil.example/callback",
+    "http://127.0.0.1.evil.example/callback",
+    "http://evil.example/callback",
+    "http://user@localhost:1234/callback",
+    "http://localhost:1234/callback?next=/",
+    "http://localhost:1234/callback#frag",
+    "https://localhost:1234/callback",
+    "http://10.0.0.1:1234/callback",
+  ]) {
+    assert.equal(redirectAllowed(ko), false, ko);
+  }
+});
+
+test("dynamic registration accepts a loopback client (Claude Code, Codex) and still refuses a foreign host", () => {
+  assert.equal(registrationRedirectsAllowed({ redirect_uris: ["http://localhost:33418/callback"] }), null);
+  assert.equal(registrationRedirectsAllowed({ redirect_uris: ["http://127.0.0.1:1455/auth/callback"] }), null);
+  assert.match(registrationRedirectsAllowed({ redirect_uris: ["http://evil.example/callback"] }) ?? "", /loopback/);
+});
+
+function loopbackOauth(request: { codeChallenge?: string; codeChallengeMethod?: string }, onComplete: () => void): OauthLike {
+  const auth = { redirectUri: "http://127.0.0.1:53682/callback", scope: ["mcp:read"], clientId: "cli", ...request };
+  return {
+    async parseAuthRequest() {
+      return auth;
+    },
+    async describeConsent() {
+      return { clientName: "Claude Code", redirectHost: "127.0.0.1", redirectIsLoopback: true, scope: ["mcp:read"] };
+    },
+    async beginConsent() {
+      return { handle: "h", headers: new Headers() };
+    },
+    async approveConsent() {
+      return { request: auth, headers: new Headers() };
+    },
+    async denyConsent() {
+      return { redirectTo: "http://127.0.0.1:53682/callback?error=access_denied", headers: new Headers() };
+    },
+    async completeAuthorization() {
+      onComplete();
+      return { redirectTo: "http://127.0.0.1:53682/callback?code=c&state=s" };
+    },
+  };
+}
+
+test("a loopback client without PKCE S256 gets no consent page", async () => {
+  for (const pkce of [{}, { codeChallenge: "abc", codeChallengeMethod: "plain" }, { codeChallenge: "abc" }]) {
+    const res = await handleAuthorize(new Request("https://worker.example/authorize"), loopbackOauth(pkce, () => {}), BASE);
+    assert.equal(res.status, 400, JSON.stringify(pkce));
+    assert.match(await res.text(), /PKCE \(méthode S256\)/);
+  }
+  const ok = await handleAuthorize(
+    new Request("https://worker.example/authorize"),
+    loopbackOauth({ codeChallenge: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", codeChallengeMethod: "S256" }, () => {}),
+    BASE,
+  );
+  assert.equal(ok.status, 200);
+  assert.match(await ok.text(), /application sur cet ordinateur/);
+});
+
+test("a loopback approval without PKCE S256 never completes the authorization", async () => {
+  let completed = false;
+  const res = await handleAuthorize(
+    new Request("https://worker.example/authorize", { method: "POST", body: form(KEY_A) }),
+    loopbackOauth({}, () => {
+      completed = true;
+    }),
+    BASE,
+    async () => jsonResponse(200, { valid: true }),
+  );
+  assert.equal(res.status, 400);
+  assert.equal(completed, false);
+});
+
+test("the resource announces both scopes (protected resource metadata and the 401 challenge)", async () => {
+  // index.ts imports cloudflare:workers, which node cannot load: the end-to-end proof runs against wrangler dev.
+  // This guard keeps the config itself announcing every scope the consent page offers.
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
+  assert.match(source, /requiredScopes:\s*\[\.\.\.SCOPES\]/);
+  assert.doesNotMatch(source, /requiredScopes:\s*\["mcp:read"\]/);
+  assert.deepEqual([...SCOPES], ["mcp:read", "mcp:write"]);
+});
