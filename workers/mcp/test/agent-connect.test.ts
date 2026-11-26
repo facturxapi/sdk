@@ -279,3 +279,38 @@ test("IMPL-3: the granted scopes are also limited to those the API recorded for 
   assert.equal(response.status, 302);
   assert.deepEqual(calls.complete[0].scope, ["mcp:read"]);
 });
+
+test("the exchange never follows a redirect: the dedicated secret is not re-sent to another host", async () => {
+  const calls: Calls = { begin: 0, finish: 0, complete: [] };
+  const oauth = fakeOauth(calls, async () => ({ request: AUTH, data: { scope: ["mcp:read"] }, headers: new Headers() }));
+  const seen: RequestInit[] = [];
+  const impl = (async (_url: string | URL | Request, init?: RequestInit) => {
+    seen.push(init ?? {});
+    if (init?.redirect !== "manual") throw new Error("the exchange must not follow redirects");
+    return new Response(null, { status: 302, headers: { Location: "https://evil.example/collect" } });
+  }) as typeof fetch;
+  const response = await handleAuthorize(new Request(RETURN), oauth, BASE, impl, CONFIG);
+  assert.equal(response.status, 400);
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].redirect, "manual");
+  assert.equal(calls.complete.length, 0);
+});
+
+test("after a 200 exchange, a failure never claims that no key was created", async () => {
+  for (const body of ["not json", JSON.stringify({ scopes: ["mcp:read"] })]) {
+    const calls: Calls = { begin: 0, finish: 0, complete: [] };
+    const oauth = fakeOauth(calls, async () => ({ request: AUTH, data: { scope: ["mcp:read"] }, headers: new Headers() }));
+    const impl = (async () => new Response(body, { status: 200 })) as typeof fetch;
+    const response = await handleAuthorize(new Request(RETURN), oauth, BASE, impl, CONFIG);
+    assert.equal(response.status, 400);
+    const text = await response.text();
+    assert.match(text, /Relancez-la depuis votre agent/);
+    assert.doesNotMatch(text, /Aucune clé/);
+  }
+  // Same when the exchange succeeds but the final scope lacks mcp:read.
+  const calls: Calls = { begin: 0, finish: 0, complete: [] };
+  const oauth = fakeOauth(calls, async () => ({ request: AUTH, data: { scope: ["mcp:read"] }, headers: new Headers() }));
+  const impl = (async () => new Response(JSON.stringify({ api_key: AGENT_KEY, scopes: ["mcp:write"] }), { status: 200 })) as typeof fetch;
+  const text = await (await handleAuthorize(new Request(RETURN), oauth, BASE, impl, CONFIG)).text();
+  assert.doesNotMatch(text, /Aucune clé/);
+});

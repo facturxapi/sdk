@@ -71,7 +71,7 @@ function exactField(value: string): string {
   return trimmed;
 }
 
-/** Only the displayed name may be shortened: the page shows it as plain text, at most 60 characters. */
+/** Only the displayed name may be shortened (to the API's 200-character limit); the page itself shows at most 60. */
 function displayField(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) throw new ConsentFieldError("empty client name");
@@ -135,7 +135,10 @@ export function returnParams(url: URL): { state: string; code: string } | null {
   return { state, code };
 }
 
-export type ExchangeResult = { ok: true; apiKey: string; scopes: string[] } | { ok: false; status: number };
+export type ExchangeResult =
+  | { ok: true; apiKey: string; scopes: string[] }
+  // keyCreated: the API answered 200, so it has created the key, but its body is unusable.
+  | { ok: false; status: number; keyCreated?: boolean };
 
 /** Server-to-server exchange of the single-use code for the agent key. */
 export async function exchangeCode(
@@ -161,10 +164,10 @@ export async function exchangeCode(
   if (response.status !== 200) return { ok: false, status: response.status };
   try {
     const body = (await response.json()) as { api_key?: unknown; scopes?: unknown };
-    if (typeof body.api_key !== "string" || !body.api_key) return { ok: false, status: 502 };
+    if (typeof body.api_key !== "string" || !body.api_key) return { ok: false, status: 502, keyCreated: true };
     const scopes = Array.isArray(body.scopes) ? body.scopes.filter((s): s is string => typeof s === "string") : [];
     return { ok: true, apiKey: body.api_key, scopes };
   } catch {
-    return { ok: false, status: 502 };
+    return { ok: false, status: 502, keyCreated: true };
   }
 }
