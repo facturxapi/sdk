@@ -1,7 +1,11 @@
 {
-  // DO NOT DEPLOY and do not put a secret here until fable-cowork confirms
-  // that Workers on this account are billed to the Cloudflare credit.
-  // The KV id is a local placeholder. It is not a real namespace.
+  // DO NOT DEPLOY from a branch or a pull request. The Worker is deployed only at a FacturX
+  // release, after review, with two PROD GO.
+  // Never put a secret here. Secrets are set with `wrangler secret put`:
+  //   AGENT_CONNECT_SIGNING_SECRET, AGENT_CONNECT_EXCHANGE_SECRET (account connect, both ≥ 32 chars,
+  //   same values as the API's AGENT_CONNECT_SIGNING_SECRET and current AGENT_CONNECT_EXCHANGE_SECRETS).
+  // Without both secrets and WEB_ORIGIN, the « Se connecter avec mon compte FacturX » button is not shown.
+  // The KV id below is a local placeholder, not a real namespace.
   "name": "facturx-mcp",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-14",
@@ -13,6 +17,7 @@
     }
   ],
   "vars": {
-    "FACTURX_BASE_URL": "https://api.facturxapi.com"
+    "FACTURX_BASE_URL": "https://api.facturxapi.com",
+    "WEB_ORIGIN": "https://facturxapi.com"
   }
 }
