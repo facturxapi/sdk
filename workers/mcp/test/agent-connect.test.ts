@@ -182,6 +182,7 @@ test("S1: a return from another browser is refused and the code is NEVER exchang
   assert.equal(calls.complete.length, 0);
   const text = await response.text();
   assert.match(text, /Aucune clé n'a été créée/);
+  assert.doesNotMatch(text, /browser|authorization|start again/i); // IMPL-4: our French page, never the library's English
   assert.doesNotMatch(text, /one-time-code|state-from-library/);
 });
 
@@ -192,7 +193,7 @@ test("the right browser: exchange with the dedicated secret, then authorization 
     data: { scope: ["mcp:read", "mcp:write"] },
     headers: new Headers({ "Set-Cookie": "__Host-oauth-upstream-abc=; Max-Age=0; Path=/; Secure; HttpOnly; SameSite=Lax" }),
   }));
-  const exchange = countingFetch(200, { api_key: AGENT_KEY, api_key_id: "k1" });
+  const exchange = countingFetch(200, { api_key: AGENT_KEY, api_key_id: "k1", scopes: ["mcp:read", "mcp:write"], revoked_api_key_ids: [] });
   const response = await handleAuthorize(new Request(RETURN), oauth, BASE, exchange.impl, CONFIG);
   assert.equal(response.status, 302);
   assert.equal(exchange.seen.length, 1);
@@ -232,4 +233,49 @@ test("a return without its parameters, or with the flow off, touches neither the
     assert.equal(calls.finish, 0);
     assert.equal(exchange.seen.length, 0);
   }
+});
+
+test("IMPL-1: after finishUpstream, a bad redirect or a missing PKCE ends before the exchange", async () => {
+  for (const request of [
+    { ...AUTH, redirectUri: "https://evil.example/callback" },
+    { ...AUTH, codeChallenge: undefined, codeChallengeMethod: undefined },
+    { ...AUTH, scope: ["mcp:write"] },
+  ]) {
+    const calls: Calls = { begin: 0, finish: 0, complete: [] };
+    const oauth = fakeOauth(calls, async () => ({ request, data: { scope: ["mcp:read"] }, headers: new Headers() }));
+    const exchange = countingFetch(200, { api_key: AGENT_KEY, scopes: ["mcp:read"] });
+    const response = await handleAuthorize(new Request(RETURN), oauth, BASE, exchange.impl, CONFIG);
+    assert.equal(response.status, 400, JSON.stringify(request));
+    assert.equal(calls.complete.length, 0);
+    // mcp:read missing is only known after the exchange's scopes; the two others never reach it.
+    if (request.scope.includes("mcp:read")) assert.equal(exchange.seen.length, 0, JSON.stringify(request));
+  }
+});
+
+test("IMPL-2: identifiers over 200 characters are refused before anything is bound; only the name is shortened", async () => {
+  const calls: Calls = { begin: 0, finish: 0, complete: [] };
+  const oauth = fakeOauth(calls, async () => {
+    throw new Error("not expected");
+  });
+  oauth.approveConsent = async () => ({ request: { ...AUTH, clientId: "https://client.example/" + "x".repeat(250) }, headers: new Headers() });
+  const response = await handleAuthorize(postForm({ handle: "h", decision: "facturx", scope: "mcp:read" }), oauth, BASE, undefined, CONFIG);
+  assert.equal(response.status, 400);
+  assert.equal(calls.begin, 0);
+  await assert.rejects(
+    signConsentToken({ state: "s".repeat(201), clientId: "c", clientName: "n", redirectHost: "h", scopes: ["mcp:read"] }, SIGNING),
+  );
+  const token = await signConsentToken(
+    { state: "s", clientId: "c", clientName: "N".repeat(300), redirectHost: "h", scopes: ["mcp:read"] },
+    SIGNING,
+  );
+  assert.equal(JSON.parse(new TextDecoder().decode(b64urlDecode(token.split(".")[0]))).client_name.length, 200);
+});
+
+test("IMPL-3: the granted scopes are also limited to those the API recorded for the key", async () => {
+  const calls: Calls = { begin: 0, finish: 0, complete: [] };
+  const oauth = fakeOauth(calls, async () => ({ request: AUTH, data: { scope: ["mcp:read", "mcp:write"] }, headers: new Headers() }));
+  const exchange = countingFetch(200, { api_key: AGENT_KEY, scopes: ["mcp:read"] });
+  const response = await handleAuthorize(new Request(RETURN), oauth, BASE, exchange.impl, CONFIG);
+  assert.equal(response.status, 302);
+  assert.deepEqual(calls.complete[0].scope, ["mcp:read"]);
 });

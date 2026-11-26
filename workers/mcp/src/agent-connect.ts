@@ -62,10 +62,26 @@ function base64url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function field(value: string): string {
+export class ConsentFieldError extends Error {}
+
+/** The API refuses any field over 200 characters: an identifier that long is refused here, never cut (IMPL-2). */
+function exactField(value: string): string {
   const trimmed = value.trim();
-  if (!trimmed) throw new Error("empty consent field");
+  if (!trimmed || trimmed.length > MAX_FIELD) throw new ConsentFieldError("consent field empty or too long");
+  return trimmed;
+}
+
+/** Only the displayed name may be shortened: the page shows it as plain text, at most 60 characters. */
+function displayField(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) throw new ConsentFieldError("empty client name");
   return trimmed.slice(0, MAX_FIELD);
+}
+
+/** Whether a client can use the account flow at all (identifiers the API will accept). */
+export function consentFieldsAcceptable(clientId: string, redirectHost: string): boolean {
+  const ok = (value: string) => value.trim().length > 0 && value.trim().length <= MAX_FIELD;
+  return ok(clientId) && ok(redirectHost);
 }
 
 export interface ConsentClaims {
@@ -87,10 +103,10 @@ export async function signConsentToken(
 ): Promise<string> {
   const payload = {
     v: 1,
-    state: field(claims.state),
-    client_id: field(claims.clientId),
-    client_name: field(claims.clientName),
-    redirect_host: field(claims.redirectHost),
+    state: exactField(claims.state),
+    client_id: exactField(claims.clientId),
+    client_name: displayField(claims.clientName),
+    redirect_host: exactField(claims.redirectHost),
     scopes: claims.scopes,
     exp: nowSeconds + CONSENT_TTL_SECONDS,
   };
@@ -119,7 +135,7 @@ export function returnParams(url: URL): { state: string; code: string } | null {
   return { state, code };
 }
 
-export type ExchangeResult = { ok: true; apiKey: string } | { ok: false; status: number };
+export type ExchangeResult = { ok: true; apiKey: string; scopes: string[] } | { ok: false; status: number };
 
 /** Server-to-server exchange of the single-use code for the agent key. */
 export async function exchangeCode(
@@ -144,9 +160,10 @@ export async function exchangeCode(
   }
   if (response.status !== 200) return { ok: false, status: response.status };
   try {
-    const body = (await response.json()) as { api_key?: unknown };
+    const body = (await response.json()) as { api_key?: unknown; scopes?: unknown };
     if (typeof body.api_key !== "string" || !body.api_key) return { ok: false, status: 502 };
-    return { ok: true, apiKey: body.api_key };
+    const scopes = Array.isArray(body.scopes) ? body.scopes.filter((s): s is string => typeof s === "string") : [];
+    return { ok: true, apiKey: body.api_key, scopes };
   } catch {
     return { ok: false, status: 502 };
   }

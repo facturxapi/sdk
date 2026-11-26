@@ -1,5 +1,6 @@
 import {
   type AgentConnectConfig,
+  consentFieldsAcceptable,
   consentRedirect,
   exchangeCode,
   RETURN_PATH,
@@ -277,6 +278,11 @@ async function startAccountConnect(
     return page("<p>Le client doit demander mcp:read. Rien n'a été enregistré.</p>", 400);
   }
   const scope = granted.filter((name) => approved.request.scope.includes(name));
+  const redirectHost = new URL(approved.request.redirectUri).host;
+  if (!consentFieldsAcceptable(approved.request.clientId, redirectHost)) {
+    // Checked before anything is bound to the browser: the API would refuse these identifiers.
+    return page("<p>Cette application ne peut pas utiliser la connexion par compte. Collez une clé API.</p>", 400);
+  }
   const details = await oauth.describeConsent(approved.request);
   // S1: the library stores the request under a fresh state and binds it to this browser (__Host- cookie).
   const upstream = await oauth.beginUpstream(approved.request, { data: { scope }, headers: approved.headers });
@@ -286,7 +292,7 @@ async function startAccountConnect(
       state: upstream.state,
       clientId: approved.request.clientId,
       clientName: details.clientName,
-      redirectHost: new URL(approved.request.redirectUri).host,
+      redirectHost,
       scopes: scope,
     },
     config.signingSecret,
@@ -323,8 +329,12 @@ async function handleReturn(
   if (!exchanged.ok) return page(RESTART, 400, finished.headers);
   const apiKey = exchanged.apiKey;
   const stored = (finished.data ?? {}) as { scope?: unknown };
+  // Scopes: what the user granted here, the client asked for, AND the API recorded for this key (IMPL-3).
   const scope = (Array.isArray(stored.scope) ? stored.scope.map(String) : []).filter(
-    (name) => (SCOPES as readonly string[]).includes(name) && finished.request.scope.includes(name),
+    (name) =>
+      (SCOPES as readonly string[]).includes(name) &&
+      finished.request.scope.includes(name) &&
+      exchanged.scopes.includes(name),
   );
   if (!scope.includes("mcp:read")) return page(RESTART, 400, finished.headers);
   // userId is stored in the clear by the OAuth library. It must not be the key or its hash.
