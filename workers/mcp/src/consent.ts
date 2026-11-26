@@ -1,3 +1,11 @@
+import {
+  type AgentConnectConfig,
+  consentRedirect,
+  exchangeCode,
+  RETURN_PATH,
+  returnParams,
+  signConsentToken,
+} from "./agent-connect.ts";
 import { asApiError, facturxFetch, multipart } from "./api.ts";
 import { SCOPES } from "./constants.ts";
 import { isLoopbackRedirect, redirectAllowed } from "./redirects.ts";
@@ -35,6 +43,11 @@ export interface OauthLike {
     options?: { scope?: string[] },
   ): Promise<{ request: AuthRequestLike; headers: Headers }>;
   denyConsent(request: Request, handle: string): Promise<{ redirectTo: string; headers: Headers }>;
+  beginUpstream(
+    request: AuthRequestLike,
+    options?: { data?: unknown; headers?: Headers },
+  ): Promise<{ state: string; headers: Headers }>;
+  finishUpstream(request: Request): Promise<{ request: AuthRequestLike; data?: unknown; headers: Headers }>;
   completeAuthorization(options: {
     request: AuthRequestLike;
     userId: string;
@@ -58,7 +71,7 @@ function scopeCaption(scope: string): string {
   return scope;
 }
 
-export function consentPage(details: ConsentFacts, handle: string): string {
+export function consentPage(details: ConsentFacts, handle: string, accountButton = false): string {
   const name = escapeHtml(details.clientName);
   const origin = details.clientDomain
     ? `Publié par <strong>${escapeHtml(details.clientDomain)}</strong>.`
@@ -71,6 +84,10 @@ export function consentPage(details: ConsentFacts, handle: string): string {
       return `${hidden}<label><input type="checkbox" name="scope" value="${safe}"${required}> ${escapeHtml(scopeCaption(scope))}</label>`;
     })
     .join("");
+  const account = accountButton
+    ? `<p><button name="decision" value="facturx" formnovalidate>Se connecter avec mon compte FacturX</button></p>
+  <p>Vous avez déjà un compte FacturX ? Autorisez ${name} en un clic : une clé dédiée est créée pour lui, sans rien copier. Ou collez une clé ci-dessous.</p>`
+    : "";
   const loopback = details.redirectIsLoopback
     ? "<p><strong>Cet accès part vers une application sur cet ordinateur.</strong> Continuez seulement si vous venez de lancer la connexion.</p>"
     : "";
@@ -93,6 +110,7 @@ export function consentPage(details: ConsentFacts, handle: string): string {
 ${loopback}
 <form method="post">
   <input type="hidden" name="handle" value="${escapeHtml(handle)}">
+  ${account}
   <label>Votre clé API FacturX <input type="password" name="api_key" autocomplete="off" required></label>
   <p>Pas encore de clé ? <a href="https://facturxapi.com/api-key">Créez-en une sur facturxapi.com/api-key</a>.</p>
   <div>${scopes}</div>
@@ -150,8 +168,12 @@ export async function handleAuthorize(
   oauth: OauthLike,
   baseUrl: string,
   fetchImpl?: typeof fetch,
+  agentConnect?: AgentConnectConfig | null,
 ): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === RETURN_PATH) {
+    return handleReturn(request, url, oauth, baseUrl, agentConnect ?? null, fetchImpl);
+  }
   if (url.pathname !== "/authorize") {
     return new Response("FacturX MCP. The connector is /mcp. The API key is never put in a URL.", {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
@@ -165,11 +187,14 @@ export async function handleAuthorize(
     if (loopbackWithoutS256(auth)) return page(PKCE_REQUIRED, 400);
     const details = await oauth.describeConsent(auth);
     const consent = await oauth.beginConsent(auth);
-    return page(consentPage(details, consent.handle), 200, consent.headers);
+    return page(consentPage(details, consent.handle, Boolean(agentConnect)), 200, consent.headers);
   }
   if (request.method !== "POST") return page("<p>Méthode refusée.</p>", 405);
   const form = await request.formData();
   const handle = String(form.get("handle") ?? "");
+  if (form.get("decision") === "facturx") {
+    return startAccountConnect(request, form, handle, oauth, agentConnect ?? null);
+  }
   if (form.get("decision") !== "approve") {
     const denied = await oauth.denyConsent(request, handle);
     const headers = denied.headers;
@@ -219,4 +244,100 @@ export async function handleAuthorize(
   }
   approved.headers.set("Location", completed.redirectTo);
   return new Response(null, { status: 302, headers: approved.headers });
+}
+
+const RESTART = "<p>La connexion n'a pas abouti. Relancez-la depuis votre agent. Aucune clé n'a été créée.</p>";
+
+function grantedScopes(form: FormData): string[] {
+  return form
+    .getAll("scope")
+    .map(String)
+    .filter((scope) => (SCOPES as readonly string[]).includes(scope));
+}
+
+/** « Se connecter avec mon compte FacturX »: approve, bind the flow to this browser, send it to facturxapi.com. */
+async function startAccountConnect(
+  request: Request,
+  form: FormData,
+  handle: string,
+  oauth: OauthLike,
+  config: AgentConnectConfig | null,
+): Promise<Response> {
+  if (!config) return page("<p>Cette option n'est pas disponible. Collez une clé API.</p>", 400);
+  const granted = grantedScopes(form);
+  if (!granted.includes("mcp:read")) {
+    return page("<p>La portée mcp:read est requise. Rien n'a été enregistré.</p>", 400);
+  }
+  const approved = await oauth.approveConsent(request, handle, { scope: granted });
+  if (!redirectAllowed(approved.request.redirectUri)) {
+    return page("<p>Cette adresse de retour n'est pas celle de Claude, de ChatGPT ni d'une application locale.</p>", 400);
+  }
+  if (loopbackWithoutS256(approved.request)) return page(PKCE_REQUIRED, 400);
+  if (!approved.request.scope.includes("mcp:read")) {
+    return page("<p>Le client doit demander mcp:read. Rien n'a été enregistré.</p>", 400);
+  }
+  const scope = granted.filter((name) => approved.request.scope.includes(name));
+  const details = await oauth.describeConsent(approved.request);
+  // S1: the library stores the request under a fresh state and binds it to this browser (__Host- cookie).
+  const upstream = await oauth.beginUpstream(approved.request, { data: { scope }, headers: approved.headers });
+  // S2: everything the page shows comes from this signed token, never from URL parameters.
+  const token = await signConsentToken(
+    {
+      state: upstream.state,
+      clientId: approved.request.clientId,
+      clientName: details.clientName,
+      redirectHost: new URL(approved.request.redirectUri).host,
+      scopes: scope,
+    },
+    config.signingSecret,
+  );
+  upstream.headers.set("Location", consentRedirect(config, token));
+  upstream.headers.set("Cache-Control", "no-store");
+  return new Response(null, { status: 303, headers: upstream.headers });
+}
+
+/** The fixed return from facturxapi.com: this browser only (S1), then the server-to-server exchange (S5). */
+async function handleReturn(
+  request: Request,
+  url: URL,
+  oauth: OauthLike,
+  baseUrl: string,
+  config: AgentConnectConfig | null,
+  fetchImpl?: typeof fetch,
+): Promise<Response> {
+  if (!config || request.method !== "GET") return page(RESTART, 400);
+  const params = returnParams(url);
+  if (!params) return page(RESTART, 400);
+  let finished: Awaited<ReturnType<OauthLike["finishUpstream"]>>;
+  try {
+    // Refuses a browser without this flow's cookie BEFORE anything else: the code is then never exchanged,
+    // and the API, which creates the key at the exchange only, creates none.
+    finished = await oauth.finishUpstream(request);
+  } catch {
+    return page(RESTART, 400);
+  }
+  if (!redirectAllowed(finished.request.redirectUri) || loopbackWithoutS256(finished.request)) {
+    return page(RESTART, 400, finished.headers);
+  }
+  const exchanged = await exchangeCode(baseUrl, config, params, fetchImpl);
+  if (!exchanged.ok) return page(RESTART, 400, finished.headers);
+  const apiKey = exchanged.apiKey;
+  const stored = (finished.data ?? {}) as { scope?: unknown };
+  const scope = (Array.isArray(stored.scope) ? stored.scope.map(String) : []).filter(
+    (name) => (SCOPES as readonly string[]).includes(name) && finished.request.scope.includes(name),
+  );
+  if (!scope.includes("mcp:read")) return page(RESTART, 400, finished.headers);
+  // userId is stored in the clear by the OAuth library. It must not be the key or its hash.
+  const completed = await oauth.completeAuthorization({
+    request: finished.request,
+    userId: crypto.randomUUID(),
+    metadata: {},
+    scope,
+    props: { apiKey },
+  });
+  if (completed.redirectTo.includes(apiKey) || completed.redirectTo.includes(encodeURIComponent(apiKey))) {
+    throw new Error("refusing a redirect that echoes the key");
+  }
+  finished.headers.set("Location", completed.redirectTo);
+  return new Response(null, { status: 302, headers: finished.headers });
 }

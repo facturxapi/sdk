@@ -5,11 +5,12 @@ import {
   type OAuthHelpers,
 } from "@cloudflare/workers-oauth-provider";
 import { SCOPES } from "./constants.ts";
+import { agentConnectConfig, type AgentConnectEnv } from "./agent-connect.ts";
 import { handleAuthorize } from "./consent.ts";
 import { handleMcp } from "./mcp.ts";
 import { registrationRedirectsAllowed } from "./redirects.ts";
 
-export interface Env {
+export interface Env extends AgentConnectEnv {
   OAUTH_KV: KVNamespace;
   FACTURX_BASE_URL: string;
   PUBLIC_BASE_URL?: string;
@@ -42,7 +43,13 @@ function providerFor(request: Request, env: Env): OAuthProvider<Env> {
     defaultHandler: {
       async fetch(incoming, handlerEnv) {
         try {
-          return await handleAuthorize(incoming, handlerEnv.OAUTH_PROVIDER, handlerEnv.FACTURX_BASE_URL);
+          return await handleAuthorize(
+            incoming,
+            handlerEnv.OAUTH_PROVIDER,
+            handlerEnv.FACTURX_BASE_URL,
+            undefined,
+            agentConnectConfig(handlerEnv),
+          );
         } catch (error) {
           if (error instanceof AuthorizationError && error.redirectTo) {
             return Response.redirect(error.redirectTo, 302);
