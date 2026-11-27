@@ -248,6 +248,8 @@ export async function handleAuthorize(
 }
 
 const RESTART = "<p>La connexion n'a pas abouti. Relancez-la depuis votre agent. Aucune clé n'a été créée.</p>";
+// After a successful exchange the API has created the agent key: never claim otherwise.
+const RESTART_AFTER_EXCHANGE = "<p>La connexion n'a pas abouti. Relancez-la depuis votre agent.</p>";
 
 function grantedScopes(form: FormData): string[] {
   return form
@@ -326,7 +328,7 @@ async function handleReturn(
     return page(RESTART, 400, finished.headers);
   }
   const exchanged = await exchangeCode(baseUrl, config, params, fetchImpl);
-  if (!exchanged.ok) return page(RESTART, 400, finished.headers);
+  if (!exchanged.ok) return page(exchanged.keyCreated ? RESTART_AFTER_EXCHANGE : RESTART, 400, finished.headers);
   const apiKey = exchanged.apiKey;
   const stored = (finished.data ?? {}) as { scope?: unknown };
   // Scopes: what the user granted here, the client asked for, AND the API recorded for this key (IMPL-3).
@@ -336,7 +338,7 @@ async function handleReturn(
       finished.request.scope.includes(name) &&
       exchanged.scopes.includes(name),
   );
-  if (!scope.includes("mcp:read")) return page(RESTART, 400, finished.headers);
+  if (!scope.includes("mcp:read")) return page(RESTART_AFTER_EXCHANGE, 400, finished.headers);
   // userId is stored in the clear by the OAuth library. It must not be the key or its hash.
   const completed = await oauth.completeAuthorization({
     request: finished.request,
