@@ -25,7 +25,7 @@ test("redirects are Claude, ChatGPT or a loopback callback", () => {
   assert.equal(redirectAllowed("https://chatgpt.com/connector/oauth/abc_123"), true);
   assert.equal(redirectAllowed("https://chatgpt.com/connector/oauth/abc/extra"), false);
   assert.equal(redirectAllowed("http://localhost:8787/callback"), true); // loopback: see the loopback tests
-  assert.equal(redirectAllowed("https://evil.example/callback"), false);
+  assert.equal(redirectAllowed("https://evil.example/callback"), true); // CI WITNESS: deliberately wrong, reverted next commit
   assert.equal(redirectAllowed("https://claude.ai/api/mcp/auth_callback?next=/"), false);
 });
 
