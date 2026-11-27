@@ -1,6 +1,6 @@
 name: CI
 
-# Offline tests of the three packages and of the publication tooling. No secret, no network call to the FacturX API.
+# Offline tests of the three packages, of the hosted MCP Worker and of the publication tooling. No secret, no network call to the FacturX API.
 on:
   push:
     branches: [main]
@@ -31,6 +31,28 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: Offline tests
         working-directory: node
+        run: npm test
+
+  mcp-worker:
+    # The hosted MCP Worker: type check and offline tests. No secret, no wrangler, no Docker.
+    name: "workers/mcp (Node 24)"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - name: Install (lockfile, no install scripts)
+        working-directory: workers/mcp
+        run: npm ci --ignore-scripts
+      - name: Type check
+        working-directory: workers/mcp
+        run: npm run check
+      - name: Offline tests
+        working-directory: workers/mcp
         run: npm test
 
   python:
